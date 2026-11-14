@@ -1,6 +1,7 @@
 """Synthesize authored guided-practice prompts with a local English voice."""
 
 import io
+import os
 import logging
 import shutil
 import subprocess
@@ -65,9 +66,11 @@ def synthesize_wav(text, speed):
     with TemporaryDirectory(prefix="litera-tts-") as directory:
         work = Path(directory)
         (work / "input.txt").write_text(text, encoding="utf-8")
+        env = None
         if sys.platform == "win32" and (powershell := shutil.which("powershell.exe")):
             script = Path(__file__).with_name("tts_windows.ps1")
-            command = [powershell, "-NoProfile", "-NonInteractive", "-File", str(script), speed]
+            env = {**os.environ, "LITERA_TTS_SPEED": speed}
+            command = [powershell, "-NoProfile", "-NonInteractive", "-Command", script.read_text(encoding="utf-8")]
         elif ffmpeg := shutil.which("ffmpeg"):
             tempo = "0.75" if speed == "slow" else "1"
             command = [ffmpeg, "-nostdin", "-v", "error", "-f", "lavfi",
@@ -75,7 +78,7 @@ def synthesize_wav(text, speed):
                        "-ac", "1", "-ar", "24000", "-c:a", "pcm_s16le", "output.wav"]
         else:
             raise RuntimeError("No local speech engine")
-        subprocess.run(command, cwd=work, check=True, timeout=8,
+        subprocess.run(command, cwd=work, check=True, timeout=8, env=env,
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         path = work / "output.wav"
         if path.stat().st_size > MAX_WAV_BYTES:

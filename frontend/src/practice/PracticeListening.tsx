@@ -1,20 +1,21 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { Icon } from "../Icons";
 import { useRecording } from "../useRecording";
-import { useSpeechPlayback } from "../speech/useSpeechPlayback";
+import { usePracticeSpeech } from "../speech/usePracticeSpeech";
 import type { PlaybackRate } from "../speech/playback";
 import type { AudioSource, ListenTarget } from "./pronunciation";
 import "./listening.css";
 
-export function PracticeListening({ targets, rehearsal, soundModel, onListen }: {
+export function PracticeListening({ targets, rehearsal, soundModel, location, flushPractice, onListen }: {
   targets: readonly ListenTarget[];
   rehearsal: boolean;
   soundModel?: { label: string; url: string };
+  location: { runId: string; step: number };
+  flushPractice: () => Promise<unknown>;
   onListen: (source: AudioSource) => void;
 }) {
   const [selection, setSelection] = useState("");
   const target = targets.find(item => item.id === selection) ?? targets[0];
-  const pending = useRef<ListenTarget>(undefined);
   const [modelError, setModelError] = useState(false);
   const recordedModel = useRef<HTMLAudioElement>(null);
   const clip = useRef<HTMLAudioElement>(null);
@@ -22,10 +23,7 @@ export function PracticeListening({ targets, rehearsal, soundModel, onListen }: 
   const [last, setLast] = useState<{ id: string; rate: PlaybackRate }>();
   const recording = useRecording("", "", "phonics");
   const microphoneBusy = recording.phase === "opening" || recording.phase === "recording";
-  const speech = useSpeechPlayback(() => {
-    if (!pending.current) return;
-    onListen(pending.current.source);
-  });
+  const speech = usePracticeSpeech(location, flushPractice, (item) => onListen(item.source));
 
   useLayoutEffect(() => {
     const practiceClip = clip.current;
@@ -44,13 +42,13 @@ export function PracticeListening({ targets, rehearsal, soundModel, onListen }: 
     };
   }, [recording.attempt, soundModel?.url]);
 
-  function listen(rate: PlaybackRate) {
+  function listen(rate: PlaybackRate, device = false) {
     if (!target || microphoneBusy || openingMic.current) return;
     clip.current?.pause();
     recordedModel.current?.pause();
-    pending.current = target;
     setLast({ id: target.id, rate });
-    speech.play(target.text, rate);
+    if (device) speech.playDevice(target, rate);
+    else void speech.play(target, rate);
   }
 
   async function startRecording() {
@@ -63,17 +61,16 @@ export function PracticeListening({ targets, rehearsal, soundModel, onListen }: 
     finally { openingMic.current = false; }
   }
 
-  const unavailable = !speech.supported || (!speech.loadingVoices && !speech.voice);
   const speaking = speech.state === "playing" || speech.state === "starting";
-  const status = !speech.supported ? "This browser cannot read aloud. Ask your teacher to model the reading." :
-    microphoneBusy ? "Finish recording before listening." :
-    unavailable ? "No on-device English voice is available. Ask your teacher to read aloud." :
-    speech.state === "error" ? "The voice could not play. Try again or ask your teacher." :
-    speech.state === "starting" ? "Starting audio…" :
+  const status = microphoneBusy ? "Finish recording before listening." :
+    speech.state === "unavailable" ? (speech.deviceAvailable
+      ? "The practice voice is unavailable. Try the device voice."
+      : "Audio is unavailable. Try again or ask your teacher to read aloud.") :
+    speech.state === "error" ? "The device voice could not play. Try again or ask your teacher." :
+    speech.state === "starting" ? "Loading audio…" :
     speech.state === "playing" ? "Playing audio…" :
     speech.state === "stopped" ? "Audio stopped." :
-    speech.state === "ended" ? "Audio finished." :
-    !speech.voice && speech.loadingVoices ? "Looking for an English voice…" : "";
+    speech.state === "ended" ? "Audio finished." : "";
 
   return <section className="practice-listening" aria-label="Guided practice audio">
     {target && <>
@@ -86,13 +83,15 @@ export function PracticeListening({ targets, rehearsal, soundModel, onListen }: 
           </select>
         </label> : <strong>Practice saying <span className="practice-listening-word">{target.label}</span></strong>}
       <div className="practice-listening-actions">
-        <button className="button quiet-button" type="button" disabled={unavailable || microphoneBusy}
+        <button className="button quiet-button" type="button" disabled={microphoneBusy}
           onClick={() => listen(1)}><Icon name="headphones" size={18}/> Listen</button>
-        <button className="button quiet-button" type="button" disabled={unavailable || microphoneBusy}
+        <button className="button quiet-button" type="button" disabled={microphoneBusy}
           onClick={() => listen(0.75)}>Listen Slowly</button>
-        <button className="button quiet-button" type="button" disabled={unavailable || microphoneBusy || last?.id !== target.id}
+        <button className="button quiet-button" type="button" disabled={microphoneBusy || last?.id !== target.id}
           onClick={() => listen(last?.rate ?? 1)}>Listen Again</button>
         <button className="button quiet-button" type="button" disabled={!speaking} onClick={() => speech.stop()}>Stop</button>
+        {speech.state === "unavailable" && speech.deviceAvailable && <button className="button quiet-button" type="button"
+          disabled={microphoneBusy} onClick={() => listen(last?.rate ?? 1, true)}>Use device voice</button>}
       </div>
       <p className="subtle" role="status">{status}</p>
     </>}
