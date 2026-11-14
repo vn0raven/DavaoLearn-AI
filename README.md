@@ -35,7 +35,7 @@ Phone layouts use fixed bottom navigation, safe-area spacing, larger touch contr
 
 ## Grade 3 English assessment and adaptive plan
 
-[Litera Reading Checks](litera-reading-checks/README.md) saves phonics, oral reading, and comprehension evidence in SQLite. The current Grade 3 English flow reads its next steps from the [Phase 5 planner](litera-reading-checks/ADAPTIVE-PLAN.md).
+[Litera Reading Checks](litera-reading-checks/README.md) saves phonics, oral reading, and comprehension evidence in SQLite. The current Grade 3 English flow reads its next steps from the [Phase 5 planner](litera-reading-checks/ADAPTIVE-PLAN.md) and opens matching [guided practice](litera-reading-checks/PRACTICE.md).
 
 ## Grade 3 English Voice Lab
 
@@ -61,3 +61,9 @@ The Windows launcher binds to localhost. Microphone capture in a browser on anot
 `POST /api/plan` accepts a validated Litera skill profile or ordered fictional check events for the standalone demo. `POST /api/transcribe` accepts a multipart `clip` and returns text for review. `GET /health` reports server and model state. API details are at `/docs`.
 
 The 80% cutoff and 75–85% initial review band are demo routing choices. “Ready” describes the app’s evidence for a particular probe tier. It is not a DepEd proficiency label or a phoneme-level speech score.
+
+## November 2026 integration enhancement candidate
+
+The Phase 6 React/TypeScript application in `litera-reading-checks/` now has graduated practice hints, private reading quests, reading accessibility controls and a localhost-only teacher evidence dashboard. **It is not an authenticated classroom product** and remains separate from the root `dist/` static Filipino demo.
+
+Read [`litera-reading-checks/IMPLEMENTATION-AUDIT.md`](litera-reading-checks/IMPLEMENTATION-AUDIT.md) for confirmed modules, remaining risks and test evidence. Read [`litera-reading-checks/DEVELOPMENT.md`](litera-reading-checks/DEVELOPMENT.md) for Windows launch and QA. The enhanced React assets must be built using `npm --prefix frontend ci && npm --prefix frontend run build` from `litera-reading-checks/` before running the backend. The Windows `Start-Litera.cmd` builds them on first launch.

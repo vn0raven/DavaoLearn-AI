@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { request } from "./api";
+import { RequestError, request } from "./api";
+import { recordExposure } from "./practice/fresh";
 import { useRecording } from "./useRecording";
 import type { Form, Judgment, Receipt, Signal, Submission, Verdict } from "./contracts";
 import "./phonics.css";
@@ -12,8 +13,8 @@ const hints: Record<Signal, string> = {
   review: "Needs review. More than one word was recognized.",
 };
 
-export function PhonicsAssessment({ learnerId, sessionId, onComplete }: {
-  learnerId: string; sessionId: string; onComplete: (receipt: Receipt) => void;
+export function PhonicsAssessment({ learnerId, sessionId, onComplete, freshFormId }: {
+  learnerId: string; sessionId: string; freshFormId?: string; onComplete: (receipt: Receipt) => void;
 }) {
   const [forms, setForms] = useState<Form[]>([]);
   const [form, setForm] = useState<Form | null>(null);
@@ -21,10 +22,23 @@ export function PhonicsAssessment({ learnerId, sessionId, onComplete }: {
   useEffect(() => {
     request<Form[]>("/api/forms").then(setForms).catch(error => setSetupError(error.message));
   }, []);
-  function start(event: FormEvent<HTMLFormElement>) {
+  const choices = forms.filter(item => !freshFormId || item.formId === freshFormId);
+  const [opening, setOpening] = useState(false);
+  async function start(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    setForm(forms.find(item => item.formId === data.get("form")) || null);
+    const selected = choices.find(item => item.formId === data.get("form"));
+    if (!selected || opening) return;
+    setOpening(true);
+    setSetupError("");
+    try {
+      await recordExposure(learnerId, selected.formId, Boolean(freshFormId));
+      setForm(selected);
+    } catch (error) {
+      setSetupError(error instanceof RequestError ? error.message : "Could not register this form. Try again.");
+    } finally {
+      setOpening(false);
+    }
   }
   return <main className="phonics-screen">
     <header><h1>Phonics check</h1>
@@ -35,8 +49,8 @@ export function PhonicsAssessment({ learnerId, sessionId, onComplete }: {
       <h2>Set up a check</h2>
       {setupError && <p role="alert">{setupError}. Check that the backend is running.</p>}
       <form onSubmit={start}>
-        <label>Form<select name="form" required>{forms.map(f => <option key={f.formId} value={f.formId}>{f.formId} · {f.pattern}</option>)}</select></label>
-        <button className="primary" disabled={!forms.length}>Start check</button>
+        <label>Form<select name="form" required>{choices.map(f => <option key={f.formId} value={f.formId}>{f.formId} · {f.pattern}</option>)}</select></label>
+        <button className="primary" disabled={!choices.length || opening}>Start check</button>
       </form>
     </section>}
   </main>;

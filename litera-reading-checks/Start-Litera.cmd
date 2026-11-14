@@ -10,11 +10,12 @@ if not exist ".venv\litera-checks-setup-v1" (
   if errorlevel 1 goto failed
   echo ready > ".venv\litera-checks-setup-v1"
 )
-if not exist "frontend\dist\index.html" (
+if not exist "frontend\dist\.basabridge-enhanced-build-v1" (
   call npm --prefix frontend ci
   if errorlevel 1 goto failed
   call npm --prefix frontend run build
   if errorlevel 1 goto failed
+  echo Built from enhanced TypeScript sources > "frontend\dist\.basabridge-enhanced-build-v1"
 )
 echo Open http://127.0.0.1:8765 in Chrome or Edge. Keep this window open.
 ".venv\Scripts\python.exe" -m backend.server

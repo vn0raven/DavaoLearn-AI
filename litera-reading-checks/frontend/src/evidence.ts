@@ -36,7 +36,8 @@ export interface SkillState {
   confirmationEventIds: string[];
 }
 
-interface RecommendedActivity {
+export interface RecommendedActivity {
+  skill: AssessmentEvent["skill"] | null;
   activityId: string;
   label: string;
   purpose: string;
@@ -61,6 +62,11 @@ export interface EvidenceProfile {
   reassessmentQueue: AssessmentEvent["skill"][];
   events: AssessmentEvent[];
   recommendation: Recommendation;
+  selectedTiers: Record<AssessmentEvent["skill"], string>;
+  rejectedSubmissions?: { eventId: string; reason: string; receivedAt: string }[];
+  originalSubmissions?: Record<string, unknown>;
+  revisions?: { eventId: string; before: unknown; after: unknown }[];
+  overrides?: { overrideId: string; why: string; timestamp: string; primaryActivityId?: string }[];
   planInput: {
     evidence: Record<AssessmentEvent["skill"], {
       status: Lowercase<Status>;
@@ -94,5 +100,15 @@ export async function recordOral(result: DetailedResult) {
       formId: event.formId, passageVersion: event.passageVersion, assistance, verified: true,
       words: words.map(({ id, judgment }) => ({ id, judgment })),
     }),
+  });
+}
+
+/** Demonstration-only endpoint: do not expose this API to real learners without server-side teacher authorization. */
+export function saveTeacherOverride(input: {
+  learnerId: string; sessionId: string; primaryActivityId: string; why: string;
+}) {
+  return request<{ overrideId: string }>("/api/evidence/overrides", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...input, overrideId: crypto.randomUUID(), timestamp: new Date().toISOString() }),
   });
 }

@@ -3,6 +3,9 @@ import { createRoot } from "react-dom/client";
 import { PhonicsAssessment } from "./PhonicsAssessment";
 import { ComprehensionAssessment } from "./comprehension/ComprehensionAssessment";
 import { OralReadingAssessment } from "./oral/OralReadingAssessment";
+import { Practice } from "./practice/Practice";
+import { TeacherDashboard } from "./teacher/TeacherDashboard";
+import type { FreshCheck } from "./practice/fresh";
 import { toTreeCheck } from "./oral/scoring";
 import { getEvidence, recordOral } from "./evidence";
 import type { EvidenceProfile } from "./evidence";
@@ -14,7 +17,14 @@ const labels = { phonics: "Phonics", oral: "Oral reading", comprehension: "Compr
 
 function App() {
   const [learnerId, setLearnerId] = useState("demo-001");
+  const [textSize, setTextSize] = useState<"normal" | "large">("normal");
+  const [highContrast, setHighContrast] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
+  const [teacherView, setTeacherView] = useState(false);
+  const teacherDemoAvailable = ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
   const [identity, setIdentity] = useState<{ learnerId: string; sessionId: string }>();
+  const [freshFormId, setFreshFormId] = useState<string>();
+  const [practising, setPractising] = useState(false);
   const [check, setCheck] = useState<keyof typeof labels>("phonics");
   const [entries, setEntries] = useState<ReadingEvidence[]>([]);
   const oralExposure = useRef(new Map<string, Set<string>>());
@@ -40,22 +50,49 @@ function App() {
   }, [identity, entries, printAccessible, refreshPlan]);
   function accept(entry: ReadingEvidence) {
     if (!identity || currentSession.current !== identity.sessionId) return;
-    ledger.current = addEvidence(identity, ledger.current, entry);
-    setEntries(ledger.current);
+    try {
+      ledger.current = addEvidence(identity, ledger.current, entry);
+      setEntries(ledger.current);
+      setProfile(undefined);
+      setStatus("Evidence added to this session.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Evidence handoff needs teacher review.");
+    }
+  }
+  function beginFresh(next: FreshCheck & { formId: string }) {
+    if (!identity || currentSession.current !== identity.sessionId) return;
+    const sessionId = crypto.randomUUID();
+    currentSession.current = sessionId;
+    setIdentity({ learnerId: identity.learnerId, sessionId });
+    setFreshFormId(next.formId);
+    setCheck(next.skill);
+    setPractising(false);
+    ledger.current = [];
+    setEntries([]);
     setProfile(undefined);
-    setStatus("Evidence added to this session.");
+    setStatus("Fresh assessment selected in a separate session.");
   }
   const data = identity ? buildHandoff(identity, entries) : null;
-  return <>
+  return <div className="basabridge-app" data-text-size={textSize} data-contrast={highContrast ? "high" : "normal"} data-focus={focusMode ? "on" : "off"}>
     <div className="mx-auto max-w-4xl px-4 pt-6 sm:px-8">
-      <header><h1 className="text-3xl font-bold text-violet-900">Litera</h1>
+      <div className="flex flex-wrap gap-2" aria-label="Reading accessibility settings">
+        <button className="button" type="button" aria-pressed={textSize === "large"} onClick={() => setTextSize(textSize === "large" ? "normal" : "large")}>Larger text</button>
+        <button className="button" type="button" aria-pressed={highContrast} onClick={() => setHighContrast(!highContrast)}>High contrast</button>
+        <button className="button" type="button" aria-pressed={focusMode} onClick={() => setFocusMode(!focusMode)}>Focus mode</button>
+      </div>
+      <header><h1 className="text-3xl font-bold text-violet-900">BasaBridge</h1>
         <p className="mt-1 text-slate-700">Grade 3 English reading checks · Demonstration</p></header>
       {identity ? <>
+        <p className="mt-3" role="status"><strong>{practising ? "Guided Practice" : "Assessment Workspace"}</strong> · {practising ? "Help is permitted; practice is not mastery." : "Independent checks have no hints. If help is given, mark the evidence assisted in the check."}</p>
+        {teacherDemoAvailable && <button className="button mt-2" type="button" disabled={practising} aria-pressed={teacherView} onClick={() => setTeacherView(!teacherView)}>
+          {teacherView ? "Return to learner" : "Teacher evidence view (local demo)"}
+        </button>}
         <p className="mt-3 text-sm">Learner {identity.learnerId} · One shared session</p>
         <nav className="mt-3 flex flex-wrap gap-2" aria-label="Choose reading check">
           {(["phonics", "oral", "comprehension"] as const).map(type => <button key={type} type="button" className="button"
-            disabled={check === type} onClick={() => {
+            disabled={practising || check === type} onClick={() => {
               if (window.confirm("Switch checks? Unsubmitted answers, marks and audio in this check will be cleared.")) {
+                setFreshFormId(undefined);
                 setCheck(type);
                 setStatus("");
               }
@@ -64,6 +101,8 @@ function App() {
             if (!window.confirm("End this session and clear its preview and audio? Saved evidence stays in the backend.")) return;
             currentSession.current = undefined;
             setIdentity(undefined);
+            setPractising(false);
+            setFreshFormId(undefined);
             ledger.current = [];
             setEntries([]);
             setProfile(undefined);
@@ -83,26 +122,32 @@ function App() {
         <button className="button primary mt-3">Start reading session</button>
       </form>}
     </div>
-    {identity && (check === "phonics"
-      ? <PhonicsAssessment {...identity} onComplete={receipt => accept({ skill: "phonics", event: receipt.event, check: receipt.treeCheck })} />
-      : check === "oral" ? <OralReadingAssessment sharedSession={identity} onPassageOpened={passageId => {
+    {identity && !teacherView && !practising && (check === "phonics"
+      ? <PhonicsAssessment key={identity.sessionId} freshFormId={freshFormId} {...identity} onComplete={receipt => accept({ skill: "phonics", event: receipt.event, check: receipt.treeCheck })} />
+      : check === "oral" ? <OralReadingAssessment key={identity.sessionId} freshFormId={freshFormId} sharedSession={identity} onPassageOpened={passageId => {
           const seen = oralExposure.current.get(identity.learnerId) ?? new Set<string>();
           seen.add(passageId);
           oralExposure.current.set(identity.learnerId, seen);
         }} onComplete={async result => {
           const saved = await recordOral(result);
+          if (saved.event.correct !== result.event.correct || saved.event.total !== result.event.total ||
+              saved.event.assisted !== result.event.assisted || saved.event.usable !== true ||
+              saved.event.kind !== "probe" || saved.event.skill !== "oral") {
+            setStatus("Server and local oral-reading evidence differ. Teacher review required; no session handoff was added.");
+            return;
+          }
           const event = { ...result.event, timestamp: saved.event.timestamp };
           accept({ skill: "oral", event, check: toTreeCheck(event) });
         }} />
-      : <ComprehensionAssessment identity={identity} seenPassages={oralExposure.current.get(identity.learnerId) ?? new Set()}
+      : <ComprehensionAssessment key={identity.sessionId} freshFormId={freshFormId} identity={identity} seenPassages={oralExposure.current.get(identity.learnerId) ?? new Set()}
           onComplete={receipt => accept({ skill: "comprehension", event: receipt.event, check: receipt.treeCheck })} />)}
-    {data && <section className="panel mx-auto mb-8 max-w-3xl">
+    {data && !teacherView && <section className="panel mx-auto mb-8 max-w-3xl">
       <h2 className="text-xl font-bold">Session evidence</h2>
       {entries.length ? <ul className="list-disc pl-5">{entries.map(entry => <li key={entry.event.eventId}>
         {labels[entry.skill]} · {entry.event.correct}/{entry.event.total}
-        {entry.event.assisted ? " · practice only" : " · independent"}
+        {entry.event.assisted ? " · assisted (not independent mastery evidence)" : " · independent"}
       </li>)}</ul> : <p>Complete a check to add evidence.</p>}
-      <details className="mt-3"><summary className="cursor-pointer font-semibold">Current session JSON (raw checks)</summary>
+      <details className="optional-details mt-3"><summary className="cursor-pointer font-semibold">Current session JSON (raw checks)</summary>
         <button className="button mt-2" onClick={async () => {
           try { await navigator.clipboard.writeText(JSON.stringify(data, null, 2)); setStatus("Copied."); }
           catch { setStatus("Select the JSON below to copy it."); }
@@ -124,7 +169,9 @@ function App() {
               {profile.recommendation.teacherReviewRequired && <p>Teacher review requested.</p>}
             </div>}
       </div>
-      <details className="mt-3">
+      {identity && <Practice key={identity.sessionId} identity={identity} profile={profile}
+        onCheck={beginFresh} onActive={setPractising} />}
+      <details className="optional-details mt-3">
         <summary className="cursor-pointer font-semibold">Saved evidence and decision-tree input</summary>
         <button type="button" className="button mt-2" onClick={() => setRefreshPlan(value => value + 1)}>Load saved evidence</button>
         {profile && <pre className="mt-2 max-h-80 overflow-auto rounded-lg bg-slate-100 p-3 text-sm">
@@ -133,7 +180,9 @@ function App() {
       </details>
       <p role="status">{status}</p>
     </section>}
-  </>;
+    {identity && teacherView && teacherDemoAvailable && <TeacherDashboard profile={profile} sessionId={identity.sessionId}
+      refresh={() => setRefreshPlan(value => value + 1)} />}
+  </div>;
 }
 
 createRoot(document.getElementById("root")!).render(<App />);
