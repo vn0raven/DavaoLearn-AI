@@ -104,9 +104,9 @@ class ApiTests(unittest.TestCase):
                 result = self.client.post("/api/transcribe", files={"clip": ("sample.wav", payload)})
                 self.assertEqual(result.status_code, code)
 
-    @unittest.skipUnless(os.getenv("BASABRIDGE_TEST_AUDIO"), "Set BASABRIDGE_TEST_AUDIO for real inference")
+    @unittest.skipUnless(os.getenv("LITERA_TEST_AUDIO"), "Set LITERA_TEST_AUDIO for real inference")
     def test_real_inference(self):
-        path = Path(os.environ["BASABRIDGE_TEST_AUDIO"])
+        path = Path(os.environ["LITERA_TEST_AUDIO"])
         result = self.client.post("/api/transcribe", files={"clip": (path.name, path.read_bytes())})
         self.assertEqual(result.status_code, 200, result.text)
         self.assertTrue(result.json()["transcript"].strip(), result.text)

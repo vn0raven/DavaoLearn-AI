@@ -1,0 +1,13 @@
+{
+  "formId": "PHONICS-B",
+  "difficultyTier": "CVCC-final-nt",
+  "pattern": "-nt",
+  "version": "1.0.0",
+  "items": [
+    {"itemId": "B-01", "word": "mint"},
+    {"itemId": "B-02", "word": "hint"},
+    {"itemId": "B-03", "word": "lint"},
+    {"itemId": "B-04", "word": "pant"},
+    {"itemId": "B-05", "word": "rant"}
+  ]
+}

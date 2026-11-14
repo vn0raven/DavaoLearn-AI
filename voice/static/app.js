@@ -9,7 +9,7 @@ const prompts = [
   {before: "", word: "The class planted seeds by the garden gate.", after: "", skill: "oral"},
 ];
 const skillNames = {phonics: "Phonics", oral: "Oral reading", comprehension: "Comprehension"};
-const storageKey = "basabridge-english-voice-v1";
+const storageKey = "litera-english-voice-v1";
 let checks = [];
 let override = null;
 let attempt = 0;

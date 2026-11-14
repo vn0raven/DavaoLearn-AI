@@ -1,0 +1,111 @@
+{
+  "passageId": "seed-bag",
+  "title": "The Seed Bag",
+  "text": "Lino helped his class plant seeds. Before the bell rang, he set the bag of seeds on a bench by the garden gate. After class, he came back with Ana. They took the bag to the garden and planted the seeds.",
+  "difficultyTier": "short-text",
+  "version": "1.0.0",
+  "source": "Original demonstration passage supplied for Litera Grade 3 English assessments",
+  "formId": "COMP-A",
+  "competencies": [
+    "EN3CAT-I-2",
+    "EN3CAT-II-2"
+  ],
+  "licensingStatus": "Original demonstration content supplied for this project. No external text or open license asserted.",
+  "questions": [
+    {
+      "questionId": "place",
+      "prompt": "Where did Lino leave the bag?",
+      "choices": [
+        {
+          "answerId": "a",
+          "text": "On a shelf by the classroom door"
+        },
+        {
+          "answerId": "b",
+          "text": "On the bench by the garden gate"
+        },
+        {
+          "answerId": "c",
+          "text": "Under the classroom table"
+        }
+      ],
+      "correctAnswerId": "b"
+    },
+    {
+      "questionId": "person",
+      "prompt": "Who came back with Lino after class?",
+      "choices": [
+        {
+          "answerId": "a",
+          "text": "Ana"
+        },
+        {
+          "answerId": "b",
+          "text": "Mia"
+        },
+        {
+          "answerId": "c",
+          "text": "Ben"
+        }
+      ],
+      "correctAnswerId": "a"
+    },
+    {
+      "questionId": "contents",
+      "prompt": "What was in the bag?",
+      "choices": [
+        {
+          "answerId": "a",
+          "text": "Labels"
+        },
+        {
+          "answerId": "b",
+          "text": "Books"
+        },
+        {
+          "answerId": "c",
+          "text": "Seeds"
+        }
+      ],
+      "correctAnswerId": "c"
+    },
+    {
+      "questionId": "time",
+      "prompt": "When did Lino put the bag on the bench?",
+      "choices": [
+        {
+          "answerId": "a",
+          "text": "After class"
+        },
+        {
+          "answerId": "b",
+          "text": "Before the bell rang"
+        },
+        {
+          "answerId": "c",
+          "text": "The next day"
+        }
+      ],
+      "correctAnswerId": "b"
+    },
+    {
+      "questionId": "action",
+      "prompt": "What did Lino and Ana do after taking the bag to the garden?",
+      "choices": [
+        {
+          "answerId": "a",
+          "text": "They made labels"
+        },
+        {
+          "answerId": "b",
+          "text": "They went to lunch"
+        },
+        {
+          "answerId": "c",
+          "text": "They planted the seeds"
+        }
+      ],
+      "correctAnswerId": "c"
+    }
+  ]
+}

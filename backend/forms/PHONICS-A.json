@@ -1,0 +1,12 @@
+{
+  "formId": "PHONICS-A",
+  "difficultyTier": "CVCC-final-nt",
+  "pattern": "-nt",
+  "items": [
+    {"itemId": "A-01", "word": "tent"},
+    {"itemId": "A-02", "word": "bent"},
+    {"itemId": "A-03", "word": "dent"},
+    {"itemId": "A-04", "word": "sent"},
+    {"itemId": "A-05", "word": "rent"}
+  ]
+}

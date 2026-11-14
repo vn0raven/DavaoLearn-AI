@@ -1,0 +1,111 @@
+{
+  "passageId": "plant-labels",
+  "title": "The Plant Labels",
+  "text": "Mia helped her class make labels for the garden. Before lunch, she set the labels on a shelf by the classroom door. After lunch, she came back with Ben. They took the labels outside and placed them beside the plants.",
+  "difficultyTier": "short-text",
+  "version": "1.0.0",
+  "source": "Original demonstration passage supplied for Litera Grade 3 English assessments",
+  "formId": "COMP-B",
+  "competencies": [
+    "EN3CAT-I-2",
+    "EN3CAT-II-2"
+  ],
+  "licensingStatus": "Original demonstration content supplied for this project. No external text or open license asserted.",
+  "questions": [
+    {
+      "questionId": "place",
+      "prompt": "Where did Mia leave the labels?",
+      "choices": [
+        {
+          "answerId": "a",
+          "text": "Inside a bag by the garden gate"
+        },
+        {
+          "answerId": "b",
+          "text": "On a bench in the garden"
+        },
+        {
+          "answerId": "c",
+          "text": "On the shelf by the classroom door"
+        }
+      ],
+      "correctAnswerId": "c"
+    },
+    {
+      "questionId": "person",
+      "prompt": "Who came back with Mia after lunch?",
+      "choices": [
+        {
+          "answerId": "a",
+          "text": "Lino"
+        },
+        {
+          "answerId": "b",
+          "text": "Ben"
+        },
+        {
+          "answerId": "c",
+          "text": "Ana"
+        }
+      ],
+      "correctAnswerId": "b"
+    },
+    {
+      "questionId": "object",
+      "prompt": "What did Mia help her class make?",
+      "choices": [
+        {
+          "answerId": "a",
+          "text": "Labels"
+        },
+        {
+          "answerId": "b",
+          "text": "Benches"
+        },
+        {
+          "answerId": "c",
+          "text": "Seed bags"
+        }
+      ],
+      "correctAnswerId": "a"
+    },
+    {
+      "questionId": "time",
+      "prompt": "When did Mia put the labels on the shelf?",
+      "choices": [
+        {
+          "answerId": "a",
+          "text": "Before lunch"
+        },
+        {
+          "answerId": "b",
+          "text": "After lunch"
+        },
+        {
+          "answerId": "c",
+          "text": "The next day"
+        }
+      ],
+      "correctAnswerId": "a"
+    },
+    {
+      "questionId": "action",
+      "prompt": "Where did Mia and Ben place the labels after taking them outside?",
+      "choices": [
+        {
+          "answerId": "a",
+          "text": "On the garden gate"
+        },
+        {
+          "answerId": "b",
+          "text": "Beside the plants"
+        },
+        {
+          "answerId": "c",
+          "text": "Under the bench"
+        }
+      ],
+      "correctAnswerId": "b"
+    }
+  ]
+}

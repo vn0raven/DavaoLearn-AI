@@ -16,7 +16,7 @@ LOG = logging.getLogger(__name__)
 MAX_BYTES = 2 * 1024 * 1024
 STATIC = Path(__file__).with_name("static")
 VOICE_LOCK = Lock()
-app = FastAPI(title="BasaBridge English Voice Tester")
+app = FastAPI(title="Litera English Voice Tester")
 
 class PlanInput(BaseModel):
     checks: list[Check] | None = Field(default=None, max_length=120)
@@ -41,7 +41,7 @@ class PlanInput(BaseModel):
 def voice_model():
     from faster_whisper import WhisperModel
 
-    return WhisperModel(os.getenv("BASABRIDGE_MODEL", "base.en"), device="cpu", compute_type="int8")
+    return WhisperModel(os.getenv("LITERA_SPEECH_MODEL", "base.en"), device="cpu", compute_type="int8")
 
 @app.get("/")
 def home():
