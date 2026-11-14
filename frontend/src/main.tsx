@@ -27,6 +27,11 @@ function App() {
   const [account,setAccount] = useState<Account|null|undefined>(undefined);
   const [error,setError] = useState('');
   const [navigation,setNavigation] = useState<Navigation|undefined>();
+  const [phonePreview,setPhonePreview] = useState(false);
+  useEffect(() => {
+    document.body.classList.toggle('litera-phone-preview', phonePreview);
+    return () => document.body.classList.remove('litera-phone-preview');
+  }, [phonePreview]);
   useEffect(()=>{if(isTeacher)return;request<Account>('/api/auth/session').then(setAccount).catch(err=>{
     if(!(err instanceof RequestError&&err.status===401))setError('Cannot check your account. Confirm the server is running.');
     setAccount(null);
@@ -44,7 +49,10 @@ function App() {
         className={(navigation?.target ?? 'home') === target ? 'current' : undefined}
         onClick={()=>jump(target)}><Icon name={icon} size={19}/> {label}</button>)}</nav>:
       <span className="header-greeting">Learn to read. Grow with Litera.</span>}
-    <div className="account-nav">{isTeacher?<a className="button quiet-button" href="/">Student portal</a>:account?<><span className="account-avatar" aria-label="Learner account">L</span><button className="button quiet-button" onClick={()=>void signOut()}><Icon name="logout" size={17}/> Log out</button></>:<a className="button quiet-button" href="/teacher"><Icon name="lock" size={17}/> Teacher portal</a>}</div>
+    <div className="account-nav"><button type="button" className="button quiet-button layout-toggle"
+      aria-pressed={phonePreview} onClick={() => setPhonePreview(current => !current)}>
+      <Icon name="smartphone" size={18}/> Portrait preview
+    </button>{isTeacher?<a className="button quiet-button" href="/">Student portal</a>:account?<><span className="account-avatar" aria-label="Learner account">L</span><button className="button quiet-button" onClick={()=>void signOut()}><Icon name="logout" size={17}/> Log out</button></>:<a className="button quiet-button" href="/teacher"><Icon name="lock" size={17}/> Teacher portal</a>}</div>
   </div>{error&&<p className="account-alert" role="alert">{error}</p>}</header>
     {isTeacher?<TeacherDashboard/>:account===undefined?<main className="lesson-home"><p role="status">Checking your login…</p></main>:
       account===null?<AuthScreen onVerify={setAccount}/>:<StudentDashboard key={account.learnerId} learnerId={account.learnerId} navigation={navigation}/>}
