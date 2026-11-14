@@ -9,6 +9,13 @@ type Activity = {formId:string; title:string; skill:'phonics' | 'oral'; prompts:
 const title = (skill: Skill) => skill === 'oral' ? 'Read aloud' : skill === 'phonics' ? 'Phonics' : 'Reading comprehension';
 const notice = (error: unknown) => error instanceof Error ? error.message : 'Something went wrong. Try again.';
 
+function recordExposure(formId: string, sessionId: string) {
+  const body = new FormData();
+  body.set('formId', formId);
+  body.set('sessionId', sessionId);
+  return request('/api/student/assessment-exposure', {method:'POST', body});
+}
+
 function Playback({blob, label}:{blob:Blob;label:string}) {
   const url = useMemo(() => URL.createObjectURL(blob), [blob]);
   useEffect(() => () => URL.revokeObjectURL(url), [url]);
@@ -90,7 +97,7 @@ function RecordTest({activity, session, onSent, onBack}: {activity:Activity;sess
   </main>;
 }
 
-function ComprehensionTest({session,onSent,onBack}: {session:string;onSent:(id:string)=>void;onBack:()=>void}) {
+function ComprehensionTest({session,onSent,onBack,freshForm,submittedForms}: {session:string;onSent:(id:string)=>void;onBack:()=>void;freshForm:string|null;submittedForms:string[]}) {
   const [forms,setForms] = useState<ComprehensionForm[]>([]);
   const [selected,setSelected] = useState('');
   const [index,setIndex] = useState(0);
@@ -98,7 +105,22 @@ function ComprehensionTest({session,onSent,onBack}: {session:string;onSent:(id:s
   const [assisted,setAssisted] = useState(false);
   const [loading,setLoading] = useState(false);
   const [error,setError] = useState('');
-  useEffect(() => {request<ComprehensionForm[]>('/api/comprehension/forms').then(items => {setForms(items);setSelected(items[0]?.formId ?? '');}).catch(err => setError(notice(err)));},[]);
+  useEffect(() => {
+    request<ComprehensionForm[]>('/api/comprehension/forms').then(items => {
+      setForms(items);
+      if (freshForm) setSelected(freshForm);
+    }).catch(err => setError(notice(err)));
+  }, [freshForm]);
+  async function choose(formId: string) {
+    setError('');
+    setLoading(true);
+    try {
+      await recordExposure(formId, session);
+      setSelected(formId);setIndex(0);setAnswers({});
+    } catch (error) {setError(notice(error));}
+    finally {setLoading(false);}
+  }
+  const available = forms.filter(item => !submittedForms.includes(item.formId));
   const form = forms.find(item => item.formId === selected);
   async function submit() {
     if (!form || Object.keys(answers).length !== form.questions.length || loading) return;
@@ -115,8 +137,13 @@ function ComprehensionTest({session,onSent,onBack}: {session:string;onSent:(id:s
   return <main className="lesson-home">
     <div className="spread"><div><p className="eyebrow">Reading comprehension</p><h1>Understand the story</h1></div><button className="button" disabled={loading} onClick={onBack}>Back to lessons</button></div>
     {error && <p role="alert" className="error-message mt-4">{error}</p>}
+    {!freshForm && <label className="field mt-4">Select a story
+      <select value={selected} disabled={loading} onChange={e => void choose(e.target.value)}>
+        <option value="" disabled>Choose a story</option>
+        {available.map(item => <option value={item.formId} key={item.formId}>{item.title}</option>)}
+      </select>
+    </label>}
     {form ? <section className="panel padded mt-4">
-      <label className="field">Select a story <select value={selected} onChange={e => {setSelected(e.target.value);setIndex(0);setAnswers({});}} disabled={loading}>{forms.map(item => <option value={item.formId} key={item.formId}>{item.title}</option>)}</select></label>
       <h2 className="mt-4">{form.title}</h2><p className="story-words">{form.text}</p>
       <div className="progress-track mt-4"><div style={{width:`${100*(index+1)/form.questions.length}%`}} /></div>
       <fieldset className="mt-4" disabled={loading}><legend><strong>Question {index+1} of {form.questions.length}: {question?.prompt}</strong></legend>
@@ -126,7 +153,8 @@ function ComprehensionTest({session,onSent,onBack}: {session:string;onSent:(id:s
         {index<form.questions.length-1?<button className="button primary" disabled={!answers[question!.questionId]||loading} onClick={() => setIndex(i=>i+1)}>Next →</button>:<button className="button primary" disabled={Object.keys(answers).length!==form.questions.length||loading} onClick={()=>void submit()}>{loading?'Submitting…':'Submit answers'}</button>}
       </div><label className="checkbox-line mt-3"><input type="checkbox" checked={assisted} onChange={e=>setAssisted(e.target.checked)}/>I received help while reading.</label>
       <p className="subtle mt-3">Answers receive tentative feedback after submission. A teacher confirms the official score.</p>
-    </section> : <p role="status" className="mt-4">Loading comprehension activities…</p>}
+    </section> : !error && <p role="status" className="mt-4">{forms.length === 0 ? 'Loading comprehension activities…' :
+      available.length ? 'Choose a story to begin.' : 'All forms were submitted. Ask your teacher to review next steps.'}</p>}
   </main>;
 }
 
@@ -144,9 +172,11 @@ function LearningPlan({profile}: {profile:Profile|null}) {
 export function StudentDashboard({learnerId, navigation}: {learnerId:string; navigation?:{target:string;version:number}}) {
   const [skill,setSkill] = useState<Skill|null>(null);
   const [activity,setActivity] = useState<Activity|null>(null);
+  const [freshForm,setFreshForm] = useState<string|null>(null);
+  const [opening,setOpening] = useState(false);
   const [forms,setForms] = useState<Form[]>([]);
   const [passages,setPassages] = useState<Passage[]>([]);
-  const [session,setSession] = useState(() => crypto.randomUUID());
+  const [session,setSession] = useState<string>(() => crypto.randomUUID());
   const [submissions,setSubmissions] = useState<Submission[]>([]);
   const [profile,setProfile] = useState<Profile|null>(null);
   const [selected,setSelected] = useState<Submission|null>(null);
@@ -167,23 +197,49 @@ export function StudentDashboard({learnerId, navigation}: {learnerId:string; nav
     try {await request(`/api/student/submissions/${item.id}/estimate`,{method:'POST'});await refresh();}
     catch(err){setError(notice(err));}finally{setLoadingPreview(false);}
   }
-  function sent(id:string) {setSkill(null);setActivity(null);void refresh().then(async()=>{
+  function sent(id:string) {setSkill(null);setActivity(null);setFreshForm(null);void refresh().then(async()=>{
     try {const items=await request<Submission[]>('/api/student/submissions'); const item=items.find(s=>s.id===id);if(item)await inspect(item);}catch{};
   });}
   useEffect(() => {
     if (!navigation) return;
-    setActivity(null); setSkill(null);
+    setActivity(null); setSkill(null); setFreshForm(null);
     const frame = window.requestAnimationFrame(() => document.getElementById(navigation.target)?.scrollIntoView({behavior:'smooth',block:'start'}));
     return () => window.cancelAnimationFrame(frame);
   }, [navigation]);
-  if(activity) return <RecordTest key={`${activity.formId}-${session}`} activity={activity} session={session} onSent={sent} onBack={()=>setActivity(null)}/>;
-  if(skill==='comprehension') return <ComprehensionTest key={session} session={session} onSent={sent} onBack={()=>setSkill(null)}/>;
+  const choicesFor = (kind: Skill): Activity[] => kind === 'phonics'
+    ? forms.map(form=>({formId:form.formId,title:`Phonics · ${form.formId}`,skill:'phonics',prompts:form.items.map(i=>i.word)}))
+    : passages.map(p=>({formId:p.formId,title:p.title,skill:'oral',prompts:[p.text]}));
+  const choices = skill && skill !== 'comprehension' ? choicesFor(skill)
+    .filter(item => !submissions.some(submission => submission.form === item.formId)) : [];
+  async function openActivity(item: Activity) {
+    setOpening(true);
+    setError('');
+    try {
+      await recordExposure(item.formId, session);
+      setActivity(item);
+    } catch (error) { setError(notice(error)); }
+    finally { setOpening(false); }
+  }
+  async function openFresh(kind: Skill) {
+    const fresh = await request<{formId:null;reason:string}|{formId:string;sessionId:string}>(`/api/student/reassessment/${kind}`, {method:'POST'});
+    if (fresh.formId === null) return fresh.reason;
+    if (kind !== 'comprehension') {
+      const next = choicesFor(kind).find(item => item.formId === fresh.formId);
+      if (!next) return 'The assigned form could not be opened. Ask your teacher to review it.';
+      setActivity(next);
+    }
+    setFreshForm(fresh.formId);
+    setSession(fresh.sessionId);
+    setSkill(kind);
+  }
+  if(activity) return <RecordTest key={`${activity.formId}-${session}`} activity={activity} session={session} onSent={sent} onBack={()=>{setActivity(null);if(skill && freshForm){setFreshForm(null);setSkill(null);}}}/>;
+  if(skill==='comprehension') return <ComprehensionTest key={session} session={session} freshForm={freshForm} submittedForms={submissions.filter(item => item.skill === 'comprehension').map(item => item.form)} onSent={sent} onBack={()=>{setSkill(null);setFreshForm(null);}}/>;
   return <main className="lesson-home litera-student-home" id="home">
     <section className="litera-hero learner-hero"><div className="hero-copy"><p className="eyebrow">Grade 3 English · Learner dashboard</p><h1>{skill ? title(skill) : 'Welcome to your reading space!'} <span aria-hidden="true">👋</span></h1><p>Learn, record and practise at your own pace. Your teacher validates the official results.</p></div><div className="hero-actions"><button className="button" onClick={()=>{setSession(crypto.randomUUID());setError('');}}>New session</button></div><div className="hero-illustration" aria-hidden="true"/></section>
     {error && <p className="error-message mt-3" role="alert">{error}</p>}
     {skill? <section className="panel padded mt-4"><div className="spread"><h2>Choose an assessment</h2><button className="button" onClick={()=>setSkill(null)}>← Back to dashboard</button></div><p className="subtle mt-2">Record between one and three takes for each word or passage.</p>
-      {(skill==='phonics'?forms.map(form=>({formId:form.formId,title:`Phonics · ${form.formId}`,skill:'phonics' as const,prompts:form.items.map(i=>i.word)})):
-        passages.map(p=>({formId:p.formId,title:p.title,skill:'oral' as const,prompts:[p.text]}))).map(item=><button className="button primary mr-2 mt-3" key={item.formId} onClick={()=>setActivity(item)}>{item.title}<Icon name="arrow" size={17}/></button>)}
+      {choices.map(item=><button className="button primary mr-2 mt-3" key={item.formId} disabled={opening} onClick={()=>void openActivity(item)}>{item.title}<Icon name="arrow" size={17}/></button>)}
+      {!choices.length && <p role="status">No unsubmitted form is available. Ask your teacher to review next steps.</p>}
     </section>:<div className="student-dashboard-grid">
       <section className="panel dashboard-panel lessons-panel" id="lessons"><div className="section-title"><span className="section-icon"><Icon name="book"/></span><div><h2>Your reading lessons</h2><p className="subtle">Choose an activity to practise and build your skills.</p></div></div>
         <div className="lesson-grid">
@@ -193,11 +249,11 @@ export function StudentDashboard({learnerId, navigation}: {learnerId:string; nav
         </div>
       </section>
       <section className="panel dashboard-panel progress-panel" id="progress"><div className="dashboard-panel-heading"><div className="section-title"><span className="section-icon"><Icon name="chart"/></span><h2>My verified skill progress</h2></div><span className="small-hint">Teacher-validated only</span></div>
-        <div className="skill-stack">{(['phonics','oral','comprehension'] as Skill[]).map(name=>{const state=profile?.skills.find(s=>s.skill===name);return <div className="skill-tile" key={name}><span className="skill-symbol"><Icon name={name==='phonics'?'book':name==='oral'?'mic':'question'} size={23}/></span><strong>{title(name)}</strong><span className="skill-score">{state?.latestUsableScore===null||state?.latestUsableScore===undefined?'—':`${state.latestUsableScore}%`}</span><span className={`pill-status ${state?.status==='READY'?'ready':state?.status==='SUPPORT'?'support':'unconfirmed'}`}>{state?.status??'UNCONFIRMED'}</span></div>;})}</div>
+        <p className="subtle mt-2">Latest usable score and skill status are shown separately.</p><div className="skill-stack">{(['phonics','oral','comprehension'] as Skill[]).map(name=>{const state=profile?.skills.find(s=>s.skill===name);return <div className="skill-tile" key={name}><span className="skill-symbol"><Icon name={name==='phonics'?'book':name==='oral'?'mic':'question'} size={23}/></span><strong>{title(name)}</strong><span className="skill-score">{state?.latestUsableScore===null||state?.latestUsableScore===undefined?'—':`${state.latestUsableScore}%`}</span><span className={`pill-status ${state?.status==='READY'?'ready':state?.status==='SUPPORT'?'support':'unconfirmed'}`}>{state?.status??'UNCONFIRMED'}</span></div>;})}</div>
       </section>
       <LearningPlan profile={profile}/>
       <Submissions items={submissions} refresh={()=>void refresh()} inspect={item=>void inspect(item)}/>
-      <PracticeJourney learnerId={learnerId} sessionId={session} profile={profile} onAssessment={setSkill} navigationVersion={navigation?.version}/>
+      <PracticeJourney learnerId={learnerId} sessionId={session} profile={profile} onAssessment={openFresh} navigationVersion={navigation?.version}/>
     </div>}
 
     {selected && <div role="dialog" aria-modal="true" aria-label="Submitted assessment details" className="modal-screen" onClick={()=>setSelected(null)}><section className="panel modal-panel" onClick={event=>event.stopPropagation()}>

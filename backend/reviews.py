@@ -15,7 +15,7 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Literal
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Request, UploadFile
 from fastapi.responses import Response
@@ -32,6 +32,7 @@ from .scoring import Submission, compare, score_probe, to_tree_check
 ROOT = Path(__file__).resolve().parents[1]
 PASSAGES = ROOT / 'frontend' / 'src' / 'oral' / 'data' / 'passages.json'
 MIME_TYPES = {'audio/webm', 'audio/mp4', 'audio/ogg', 'audio/wav', 'audio/x-wav'}
+DEMO_TIERS = {Skill.PHONICS: 'CVCC-final-nt', Skill.ORAL: 'short-text', Skill.COMPREHENSION: 'short-text'}
 WORD_PATTERN = re.compile(r"[^\W\d_]+(?:[’'-][^\W\d_]+)*", re.UNICODE)
 
 
@@ -64,14 +65,25 @@ def words(passage: dict) -> list[str]:
     return WORD_PATTERN.findall(passage['text'])
 
 
+def no_oral_speech(prompts):
+    return {'status': 'unavailable', 'message': 'No speech was recognized. This clip needs teacher review.',
+            'items': [{'word': word, 'verdict': 'UNCERTAIN'} for word in prompts]}
+
+
+def speech_preview(row):
+    result = json.loads(row['provisional']) if row['provisional'] else None
+    if result and row['skill'] == Skill.ORAL and 'transcript' in result and not WORD_PATTERN.search(result['transcript'] or ''):
+        return no_oral_speech(item['word'] for item in result['items'])
+    return result
+
+
 def recommendation_profile(store: EvidenceStore, learner_id: str):
     from .plan import plan_from_profile
-    tiers = {Skill.PHONICS: 'CVCC-final-nt', Skill.ORAL: 'short-text', Skill.COMPREHENSION: 'short-text'}
-    profile = store.profile(learner_id, tiers)
+    profile = store.profile(learner_id, DEMO_TIERS)
     # Show the most recent documented teacher override, without altering raw scores.
     if profile['overrides']:
         latest = profile['overrides'][-1]
-        profile = store.profile(learner_id, tiers, override_session=latest.sessionId)
+        profile = store.profile(learner_id, DEMO_TIERS, override_session=latest.sessionId)
     profile['recommendation'] = plan_from_profile(profile)
     return json.loads(json.dumps(profile, default=lambda value: value.model_dump(mode='json') if hasattr(value, 'model_dump') else str(value)))
 
@@ -93,6 +105,10 @@ class ReviewRepository:
                     provisional TEXT, result TEXT
                 );
                 CREATE INDEX IF NOT EXISTS student_submissions ON submissions(learner, created_at);
+                CREATE TABLE IF NOT EXISTS assessment_exposure (
+                    learner TEXT NOT NULL, form TEXT NOT NULL, session TEXT NOT NULL,
+                    reserved INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (learner, form)
+                );
                 CREATE TABLE IF NOT EXISTS recordings (
                     submission TEXT NOT NULL REFERENCES submissions(id),
                     prompt INTEGER NOT NULL, take INTEGER NOT NULL,
@@ -115,7 +131,7 @@ class ReviewRepository:
     def summary(self, row):
         return {**{k: row[k] for k in ('id','learner','session','skill','form','created_at')},
                 'assisted': bool(row['assisted']),
-                'provisional': json.loads(row['provisional']) if row['provisional'] else None,
+                'provisional': speech_preview(row),
                 'result': json.loads(row['result']) if row['result'] else None,
                 'status': 'validated' if row['result'] else 'awaiting_teacher_review'}
 
@@ -133,6 +149,77 @@ class ReviewRepository:
             else:
                 rows = db.execute('SELECT * FROM submissions ORDER BY created_at DESC, rowid DESC').fetchall()
         return [self.summary(row) for row in rows]
+
+    def form_metadata(self, form_id):
+        if form_id in self.forms:
+            form = self.forms[form_id]
+            return Skill.PHONICS, form.difficultyTier, form.version, None
+        if form_id in self.passages:
+            passage = self.passages[form_id]
+            return Skill.ORAL, passage['difficultyTier'], passage['version'], passage['passageId']
+        if form_id in self.comprehension:
+            form = self.comprehension[form_id]
+            return Skill.COMPREHENSION, form.difficultyTier, form.version, form.passageId
+        raise HTTPException(404, 'Unknown assessment form.')
+
+    def mark_exposure(self, learner, form_id, session):
+        self.form_metadata(form_id)
+        with self.connect() as db:
+            db.execute('BEGIN IMMEDIATE')
+            self.check_reservation(db, learner, form_id, session)
+            db.execute('INSERT OR IGNORE INTO assessment_exposure (learner,form,session) VALUES (?,?,?)',
+                       (learner, form_id, str(session)))
+        return {'recorded': True}
+
+    def start_fresh(self, learner, skill):
+        tier = DEMO_TIERS[skill]
+        events = self.store.learner_events(learner)
+        prior_checks = [event for event in events
+                        if event.skill == skill and event.difficultyTier == tier and event.kind == 'probe'
+                        and event.usable and not event.assisted and event.submissionStatus == 'complete']
+        reason = 'Teacher review needed. No unseen assessment form has approved comparability for this skill.'
+        if not prior_checks:
+            return {'formId': None, 'reason': reason}
+        prior = max(prior_checks, key=lambda event: (event.timestamp, event.eventId))
+        group = self.store.approved.get((skill, tier, prior.formId, prior.formVersion,
+                                         prior.rubricVersion, prior.conditions))
+        if group is None or (prior.rubricVersion, prior.conditions) != ('v1', 'standard'):
+            return {'formId': None, 'reason': reason}
+        seen_forms = {event.formId for event in events}
+        seen_passages = {event.passageId for event in events if event.passageId}
+        with self.connect() as db:
+            db.execute('BEGIN IMMEDIATE')
+            seen_forms.update(row['form'] for row in db.execute(
+                'SELECT form FROM submissions WHERE learner=? UNION SELECT form FROM assessment_exposure WHERE learner=?',
+                (learner, learner)))
+            seen_passages.update(record['passageId'] for form, record in self.passages.items() if form in seen_forms)
+            seen_passages.update(form.passageId for key, form in self.comprehension.items() if key in seen_forms)
+            for form_id in (*self.forms, *self.passages, *self.comprehension):
+                candidate_skill, candidate_tier, version, passage = self.form_metadata(form_id)
+                if (candidate_skill, candidate_tier) != (skill, tier) or form_id in seen_forms or passage in seen_passages:
+                    continue
+                if self.store.approved.get((skill, tier, form_id, version, 'v1', 'standard')) == group:
+                    session = str(uuid4())
+                    db.execute('INSERT INTO assessment_exposure VALUES (?,?,?,1)', (learner, form_id, session))
+                    return {'formId': form_id, 'sessionId': session}
+        return {'formId': None, 'reason': reason}
+
+    def check_reservation(self, db, learner, form_id, session):
+        reserved = db.execute('SELECT session FROM assessment_exposure WHERE learner=? AND form=? AND reserved=1',
+                              (learner, form_id)).fetchone()
+        if reserved and reserved['session'] != str(session):
+            raise HTTPException(409, 'This form was assigned to a different fresh-check session. Ask your teacher.')
+
+    def ensure_unique_submission(self, db, attempt, learner, session, skill, form_id):
+        self.check_reservation(db, learner, form_id, session)
+        if db.execute('SELECT 1 FROM submissions WHERE id=?', (str(attempt),)).fetchone():
+            raise HTTPException(409, 'This submission ID has already been used.')
+        prior = db.execute('SELECT session,form FROM submissions WHERE learner=? AND skill=? AND (session=? OR form=?)',
+                           (learner, skill, str(session), form_id)).fetchone()
+        if prior:
+            message = ('This form was already submitted. Ask your teacher to review next steps.' if prior['form'] == form_id
+                       else 'This skill was already submitted in this session. Start a new session for your next check.')
+            raise HTTPException(409, message)
 
     def insert_recordings(self, attempt: UUID, session: UUID, learner: str, form_id: str,
                           slots: list, clips: list[UploadFile]):
@@ -164,8 +251,7 @@ class ReviewRepository:
                 raise HTTPException(422, 'Each prompt needs sequential takes starting with 1.')
         with self.connect() as db:
             db.execute('BEGIN IMMEDIATE')
-            if db.execute('SELECT 1 FROM submissions WHERE id=?', (str(attempt),)).fetchone():
-                raise HTTPException(409, 'This submission ID has already been used.')
+            self.ensure_unique_submission(db, attempt, learner, session, skill, form_id)
             db.execute('''INSERT INTO submissions (id,learner,session,skill,form,created_at)
                           VALUES (?,?,?,?,?,?)''', (str(attempt), learner, str(session), skill, form_id,
                             datetime.now(timezone.utc).isoformat()))
@@ -192,7 +278,7 @@ class ReviewRepository:
         if row['skill'] == 'comprehension':
             return self.summary(row)['provisional']
         if row['provisional']:
-            return json.loads(row['provisional'])
+            return speech_preview(row)
         from difflib import SequenceMatcher
         if row['skill'] == 'phonics':
             prompts = [item.word for item in self.forms[row['form']].items]
@@ -225,13 +311,16 @@ class ReviewRepository:
                           'verdict': verdicts[i]} for i, word in enumerate(prompts)]}
             else:
                 heard = WORD_PATTERN.findall(recognized[0].casefold())
-                targets = [word.casefold() for word in prompts]
-                matched = set()
-                for segment in SequenceMatcher(None, targets, heard, autojunk=False).get_matching_blocks():
-                    matched.update(range(segment.a, segment.a + segment.size))
-                result = {'status': 'provisional', 'transcript': recognized[0], 'items': [
-                    {'word': word, 'verdict': 'LIKELY_CORRECT' if i in matched else 'LIKELY_INCORRECT'}
-                    for i, word in enumerate(prompts)]}
+                if not heard:
+                    result = no_oral_speech(prompts)
+                else:
+                    targets = [word.casefold() for word in prompts]
+                    matched = set()
+                    for segment in SequenceMatcher(None, targets, heard, autojunk=False).get_matching_blocks():
+                        matched.update(range(segment.a, segment.a + segment.size))
+                    result = {'status': 'provisional', 'transcript': recognized[0], 'items': [
+                        {'word': word, 'verdict': 'LIKELY_CORRECT' if i in matched else 'LIKELY_INCORRECT'}
+                        for i, word in enumerate(prompts)]}
         with self.connect() as db:
             db.execute('UPDATE submissions SET provisional=? WHERE id=? AND provisional IS NULL',
                        (json.dumps(result), attempt))
@@ -249,8 +338,7 @@ class ReviewRepository:
                        'notice': 'Automatically checked, but teacher validation is still pending.'}
         with self.connect() as db:
             db.execute('BEGIN IMMEDIATE')
-            if db.execute('SELECT 1 FROM submissions WHERE id=?', (str(data.attemptId),)).fetchone():
-                raise HTTPException(409, 'Duplicate submission ID.')
+            self.ensure_unique_submission(db, data.attemptId, learner, data.sessionId, Skill.COMPREHENSION, data.formId)
             db.execute('''INSERT INTO submissions
                           (id, learner, session, skill, form, created_at, assisted, provisional)
                           VALUES (?,?,?,?,?,?,?,?)''', (str(data.attemptId), learner, str(data.sessionId),
@@ -267,6 +355,10 @@ class ReviewRepository:
             if row['result']:
                 raise HTTPException(409, 'This submission has already been validated.')
             skill, form_id = row['skill'], row['form']
+            if any(event.eventId != attempt and event.skill == skill and event.kind == 'probe'
+                   and (event.sessionId == row['session'] or event.formId == form_id)
+                   for event in self.store.learner_events(row['learner'])):
+                raise HTTPException(409, 'A check for this form or session was already validated.')
             if skill == 'phonics':
                 form = self.forms[form_id]
                 prompts = [item.word for item in form.items]
@@ -350,6 +442,15 @@ def install_reviews(app, auth, forms, store: EvidenceStore, repository_path=None
         except (ValueError, TypeError):
             raise HTTPException(422, 'Invalid recording manifest.')
         return repo.insert_recordings(attempt, session, learner['learnerId'], form, mapping, clips)
+
+    @student.post('/student/assessment-exposure', dependencies=[Depends(check_origin)])
+    def student_exposure(formId: str = Form(max_length=64), sessionId: UUID = Form(),
+                         learner=Depends(auth.current_learner)):
+        return repo.mark_exposure(learner['learnerId'], formId, sessionId)
+
+    @student.post('/student/reassessment/{skill}', dependencies=[Depends(check_origin)])
+    def student_reassessment(skill: Skill, learner=Depends(auth.current_learner)):
+        return repo.start_fresh(learner['learnerId'], skill)
 
     @student.get('/student/submissions')
     def student_submissions(learner=Depends(auth.current_learner)):

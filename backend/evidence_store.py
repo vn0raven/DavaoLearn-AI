@@ -116,6 +116,10 @@ class EvidenceStore:
             return AssessmentEvent.model_validate_json(row["payload"]), json.loads(row["original"])
         return None
 
+    def learner_events(self, learner):
+        with self.connect() as db:
+            return self._events(db, learner)
+
     def prior_events(self, learner, skill, tier):
         with self.connect() as db:
             return self._events(db, learner, skill, tier)

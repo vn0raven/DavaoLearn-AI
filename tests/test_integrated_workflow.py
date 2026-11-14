@@ -157,3 +157,114 @@ def test_logged_in_gamification_does_not_create_scores(env):
     assert client.get('/api/student/profile').json()['skills'] == original['skills']
     client.post('/api/auth/logout')
     assert client.get('/api/student/practice').status_code == 401
+
+
+def test_blank_oral_transcript_is_unscorable_and_preserves_teacher_result(env, monkeypatch):
+    from backend.reviews import words
+
+    client, _ = env
+    login(env)
+    attempt, _ = submit_recordings(client, 'ORAL-A', count=1, takes=1)
+    monkeypatch.setattr('backend.reviews.speech.decode_audio', lambda *_: object())
+    monkeypatch.setattr('backend.reviews.speech.transcribe', lambda _: ' ... ')
+    estimate = client.post(f'/api/student/submissions/{attempt}/estimate').json()
+    assert estimate['status'] == 'unavailable'
+    assert {item['verdict'] for item in estimate['items']} == {'UNCERTAIN'}
+    repo = client.app.state.reviews
+    count = len(words(repo.passages['ORAL-A']))
+    result = client.post(f'/api/teacher/submissions/{attempt}/review',
+                         headers={'X-Teacher-Key':'local-test-teacher-key-only'},
+                         json={'marks':['CORRECT']*count, 'selectedTakes':[1], 'verified':True, 'assisted':False})
+    assert result.status_code == 200, result.text
+    assert result.json()['event']['correct'] == count
+    # Present old blank-transcript estimates safely without rewriting original rows.
+    import json
+    old = json.dumps({'transcript':'', 'items':[{'word':'Lino', 'verdict':'LIKELY_INCORRECT'}]})
+    with repo.connect() as db:
+        db.execute('UPDATE submissions SET provisional=? WHERE id=?', (old, attempt))
+    snapshot = client.get('/api/student/submissions').json()[0]
+    assert snapshot['result']['event']['correct'] == count
+    assert snapshot['provisional']['items'][0]['verdict'] == 'UNCERTAIN'
+    assert repo.get(attempt)['provisional'] == old
+
+
+@pytest.mark.parametrize('form,reuse_session', [('PHONICS-A', False), ('PHONICS-B', True)])
+def test_logically_duplicate_recording_with_new_id_is_rejected(env, form, reuse_session):
+    import json
+
+    client, _ = env
+    login(env)
+    _, session = submit_recordings(client, takes=1)
+    body = {'attempt':str(uuid4()), 'session':session if reuse_session else str(uuid4()),
+            'form':form, 'slots':json.dumps([[i,1] for i in range(5)])}
+    files = [('clips',('demo.webm',b'synthetic-sample','audio/webm')) for _ in range(5)]
+    assert client.post('/api/recording-submissions', data=body, files=files).status_code == 409
+    assert len(client.get('/api/student/submissions').json()) == 1
+
+
+def test_duplicate_comprehension_new_id_keeps_verified_profile(env):
+    client, _ = env
+    login(env)
+    form = client.get('/api/comprehension/forms').json()[0]
+    body = {'attemptId':str(uuid4()), 'sessionId':str(uuid4()), 'formId':form['formId'],
+            'responses':[{'questionId':q['questionId'], 'answerId':q['choices'][0]['answerId']}
+                         for q in form['questions']]}
+    assert client.post('/api/comprehension/submissions', json=body).status_code == 201
+    review = client.post(f"/api/teacher/submissions/{body['attemptId']}/review",
+                         headers={'X-Teacher-Key':'local-test-teacher-key-only'},
+                         json={'marks':['CORRECT']*len(form['questions']), 'verified':True, 'assisted':False})
+    assert review.status_code == 200
+    before = client.get('/api/student/profile').json()
+    duplicate = {**body, 'attemptId':str(uuid4()), 'sessionId':str(uuid4())}
+    assert client.post('/api/comprehension/submissions', json=duplicate).status_code == 409
+    assert client.get('/api/student/profile').json() == before
+
+
+def test_fresh_check_requires_approval_and_reserves_one_unseen_form(env):
+    client, _ = env
+    login(env)
+    attempt, session = submit_recordings(client, takes=1)
+    response = client.post(f'/api/teacher/submissions/{attempt}/review',
+                           headers={'X-Teacher-Key':'local-test-teacher-key-only'},
+                           json={'marks':['CORRECT']*3+['INCORRECT']*2, 'selectedTakes':[1]*5,
+                                 'verified':True, 'assisted':False})
+    assert response.status_code == 200
+    url = '/api/student/reassessment/phonics'
+    assert client.post(url).json()['formId'] is None
+    repo = client.app.state.reviews
+    repo.store.approved.update({
+        ('phonics', form.difficultyTier, form.formId, form.version, 'v1', 'standard'):'test-only-group'
+        for form in repo.forms.values()
+    })
+    fresh = client.post(url).json()
+    assert fresh['formId'] == 'PHONICS-B' and fresh['sessionId'] != session
+    assert client.post(url).json()['formId'] is None
+    assert client.post('/api/student/assessment-exposure',
+                       data={'formId':'PHONICS-B', 'sessionId':str(uuid4())}).status_code == 409
+
+
+def test_seen_passage_in_other_skill_is_not_a_fresh_form(env):
+    client, _ = env
+    login(env)
+    attempt, session = submit_recordings(client, 'ORAL-A', count=1, takes=1)
+    response = client.post(f'/api/teacher/submissions/{attempt}/review',
+                           headers={'X-Teacher-Key':'local-test-teacher-key-only'},
+                           json={'marks':['CORRECT']*41, 'selectedTakes':[1], 'verified':True, 'assisted':False})
+    assert response.status_code == 200
+    repo = client.app.state.reviews
+    repo.store.approved.update({
+        ('oral', form['difficultyTier'], form['formId'], form['version'], 'v1', 'standard'):'test-only-group'
+        for form in repo.passages.values()
+    })
+    assert client.post('/api/student/assessment-exposure',
+                       data={'formId':'COMP-B', 'sessionId':session}).status_code == 200
+    assert client.post('/api/student/reassessment/oral').json()['formId'] is None
+
+
+def test_canonical_server_keeps_teacher_and_legacy_evidence_routes_separate(env):
+    client, _ = env
+    learner = login(env)
+    assert client.get(f'/api/teacher/learners/{learner}/profile').status_code == 403
+    assert client.post('/api/teacher/overrides', json={}).status_code == 403
+    assert client.get(f'/api/evidence/learners/{learner}').status_code == 404
+    assert client.post('/api/evidence/oral', json={}).status_code == 404
