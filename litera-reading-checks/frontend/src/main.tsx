@@ -3,6 +3,8 @@ import { createRoot } from "react-dom/client";
 import { PhonicsAssessment } from "./PhonicsAssessment";
 import { ComprehensionAssessment } from "./comprehension/ComprehensionAssessment";
 import { OralReadingAssessment } from "./oral/OralReadingAssessment";
+import { Practice } from "./practice/Practice";
+import type { FreshCheck } from "./practice/fresh";
 import { toTreeCheck } from "./oral/scoring";
 import { getEvidence, recordOral } from "./evidence";
 import type { EvidenceProfile } from "./evidence";
@@ -15,6 +17,8 @@ const labels = { phonics: "Phonics", oral: "Oral reading", comprehension: "Compr
 function App() {
   const [learnerId, setLearnerId] = useState("demo-001");
   const [identity, setIdentity] = useState<{ learnerId: string; sessionId: string }>();
+  const [freshFormId, setFreshFormId] = useState<string>();
+  const [practising, setPractising] = useState(false);
   const [check, setCheck] = useState<keyof typeof labels>("phonics");
   const [entries, setEntries] = useState<ReadingEvidence[]>([]);
   const oralExposure = useRef(new Map<string, Set<string>>());
@@ -45,6 +49,19 @@ function App() {
     setProfile(undefined);
     setStatus("Evidence added to this session.");
   }
+  function beginFresh(next: FreshCheck & { formId: string }) {
+    if (!identity || currentSession.current !== identity.sessionId) return;
+    const sessionId = crypto.randomUUID();
+    currentSession.current = sessionId;
+    setIdentity({ learnerId: identity.learnerId, sessionId });
+    setFreshFormId(next.formId);
+    setCheck(next.skill);
+    setPractising(false);
+    ledger.current = [];
+    setEntries([]);
+    setProfile(undefined);
+    setStatus("Fresh assessment selected in a separate session.");
+  }
   const data = identity ? buildHandoff(identity, entries) : null;
   return <>
     <div className="mx-auto max-w-4xl px-4 pt-6 sm:px-8">
@@ -54,8 +71,9 @@ function App() {
         <p className="mt-3 text-sm">Learner {identity.learnerId} · One shared session</p>
         <nav className="mt-3 flex flex-wrap gap-2" aria-label="Choose reading check">
           {(["phonics", "oral", "comprehension"] as const).map(type => <button key={type} type="button" className="button"
-            disabled={check === type} onClick={() => {
+            disabled={practising || check === type} onClick={() => {
               if (window.confirm("Switch checks? Unsubmitted answers, marks and audio in this check will be cleared.")) {
+                setFreshFormId(undefined);
                 setCheck(type);
                 setStatus("");
               }
@@ -64,6 +82,8 @@ function App() {
             if (!window.confirm("End this session and clear its preview and audio? Saved evidence stays in the backend.")) return;
             currentSession.current = undefined;
             setIdentity(undefined);
+            setPractising(false);
+            setFreshFormId(undefined);
             ledger.current = [];
             setEntries([]);
             setProfile(undefined);
@@ -83,9 +103,9 @@ function App() {
         <button className="button primary mt-3">Start reading session</button>
       </form>}
     </div>
-    {identity && (check === "phonics"
-      ? <PhonicsAssessment {...identity} onComplete={receipt => accept({ skill: "phonics", event: receipt.event, check: receipt.treeCheck })} />
-      : check === "oral" ? <OralReadingAssessment sharedSession={identity} onPassageOpened={passageId => {
+    {identity && !practising && (check === "phonics"
+      ? <PhonicsAssessment key={identity.sessionId} freshFormId={freshFormId} {...identity} onComplete={receipt => accept({ skill: "phonics", event: receipt.event, check: receipt.treeCheck })} />
+      : check === "oral" ? <OralReadingAssessment key={identity.sessionId} freshFormId={freshFormId} sharedSession={identity} onPassageOpened={passageId => {
           const seen = oralExposure.current.get(identity.learnerId) ?? new Set<string>();
           seen.add(passageId);
           oralExposure.current.set(identity.learnerId, seen);
@@ -94,7 +114,7 @@ function App() {
           const event = { ...result.event, timestamp: saved.event.timestamp };
           accept({ skill: "oral", event, check: toTreeCheck(event) });
         }} />
-      : <ComprehensionAssessment identity={identity} seenPassages={oralExposure.current.get(identity.learnerId) ?? new Set()}
+      : <ComprehensionAssessment key={identity.sessionId} freshFormId={freshFormId} identity={identity} seenPassages={oralExposure.current.get(identity.learnerId) ?? new Set()}
           onComplete={receipt => accept({ skill: "comprehension", event: receipt.event, check: receipt.treeCheck })} />)}
     {data && <section className="panel mx-auto mb-8 max-w-3xl">
       <h2 className="text-xl font-bold">Session evidence</h2>
@@ -124,6 +144,8 @@ function App() {
               {profile.recommendation.teacherReviewRequired && <p>Teacher review requested.</p>}
             </div>}
       </div>
+      {identity && <Practice key={identity.sessionId} identity={identity} profile={profile}
+        onCheck={beginFresh} onActive={setPractising} />}
       <details className="mt-3">
         <summary className="cursor-pointer font-semibold">Saved evidence and decision-tree input</summary>
         <button type="button" className="button mt-2" onClick={() => setRefreshPlan(value => value + 1)}>Load saved evidence</button>

@@ -11,6 +11,7 @@ from pydantic import Field, model_validator
 
 from .evidence import AssessmentEvent
 from .evidence_api import save_verified
+from .fresh_checks import mark_exposure
 from .scoring import Identifier, Model, to_tree_check
 
 Mode = Literal["independent", "assisted"]
@@ -80,6 +81,7 @@ class Start(Model):
     formId: Identifier
     difficultyTier: Identifier
     mode: Mode
+    requireFresh: bool = False
 
 
 class Response(Model):
@@ -124,9 +126,8 @@ class Attempt:
     receipt: dict | None = None
 
 
-def create_router(store):
+def create_router(store, forms):
     router = APIRouter(prefix="/api/comprehension")
-    forms = load_forms()
     attempts: dict[str, Attempt] = {}
     exposed_forms: set[tuple[str, str]] = set()
     exposed_passages: set[tuple[str, str]] = set()
@@ -145,6 +146,8 @@ def create_router(store):
         form = forms.get(start.formId)
         if form is None:
             raise HTTPException(404, "Comprehension form was not found.")
+        if start.requireFresh and start.mode != "independent":
+            raise HTTPException(422, "A fresh check must start in independent mode.")
         if form.difficultyTier != start.difficultyTier:
             raise HTTPException(422, "The difficulty tier does not match this form.")
         form_key = (start.learnerId, start.formId)
@@ -164,6 +167,7 @@ def create_router(store):
                 seen = any(event.formId == form.formId or event.passageId == form.passageId for event in saved)
                 if start.mode == "independent" and (seen or form_key in exposed_forms or passage_key in exposed_passages):
                     raise HTTPException(409, "This learner has seen this passage or form. Choose a fresh passage or Assisted practice.")
+                mark_exposure(store, start.learnerId, form.formId, form.passageId, require_fresh=start.requireFresh)
                 attempts[start.eventId] = Attempt(start)
                 exposed_forms.add(form_key)
                 exposed_passages.add(passage_key)
@@ -178,7 +182,7 @@ def create_router(store):
             if attempt.receipt:
                 raise HTTPException(409, "This assessment has already been submitted.")
             form = forms[attempt.start.formId]
-            original = attempt.start.model_dump(mode="json")
+            original = attempt.start.model_dump(mode="json", exclude={"requireFresh"})
             event = AssessmentEvent(
                 eventId=event_id, learnerId=attempt.start.learnerId, sessionId=attempt.start.sessionId,
                 skill="comprehension", formId=form.formId, formVersion=form.version,
@@ -246,7 +250,7 @@ def create_router(store):
                 difficultyTier=form.difficultyTier, correct=correct, total=total,
                 assisted=assisted, usable=True, timestamp=datetime.now(UTC),
             )
-            original = {"start": start.model_dump(mode="json"), "responses": responses, "assisted": assisted}
+            original = {"start": start.model_dump(mode="json", exclude={"requireFresh"}), "responses": responses, "assisted": assisted}
             saved = save_verified(store, event, original)
             receipt = build_receipt(saved, responses)
             attempt.receipt = receipt

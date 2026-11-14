@@ -1,5 +1,11 @@
 # Changelog
 
+## Phase 6 — Guided learning activities
+
+- Added original phonics, guided oral reading, comprehension, and mixed practice mapped to Phase 5 recommendations.
+- Added guided feedback, resumable local practice records, and separate activity completion tracking.
+- Added fresh assessment selection with persistent form exposure and a local teacher-review queue when no form is available.
+
 ## Phase 5 — Adaptive decision tree
 
 - Added eight confirmed-state routes, accessible practice when evidence is uncertain, and explainable support and reassessment queues.

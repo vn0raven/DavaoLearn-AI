@@ -36,7 +36,8 @@ export interface SkillState {
   confirmationEventIds: string[];
 }
 
-interface RecommendedActivity {
+export interface RecommendedActivity {
+  skill: AssessmentEvent["skill"] | null;
   activityId: string;
   label: string;
   purpose: string;
@@ -61,6 +62,7 @@ export interface EvidenceProfile {
   reassessmentQueue: AssessmentEvent["skill"][];
   events: AssessmentEvent[];
   recommendation: Recommendation;
+  selectedTiers: Record<AssessmentEvent["skill"], string>;
   planInput: {
     evidence: Record<AssessmentEvent["skill"], {
       status: Lowercase<Status>;

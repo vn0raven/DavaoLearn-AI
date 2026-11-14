@@ -35,7 +35,7 @@ Phone layouts use fixed bottom navigation, safe-area spacing, larger touch contr
 
 ## Grade 3 English assessment and adaptive plan
 
-[Litera Reading Checks](litera-reading-checks/README.md) saves phonics, oral reading, and comprehension evidence in SQLite. The current Grade 3 English flow reads its next steps from the [Phase 5 planner](litera-reading-checks/ADAPTIVE-PLAN.md).
+[Litera Reading Checks](litera-reading-checks/README.md) saves phonics, oral reading, and comprehension evidence in SQLite. The current Grade 3 English flow reads its next steps from the [Phase 5 planner](litera-reading-checks/ADAPTIVE-PLAN.md) and opens matching [guided practice](litera-reading-checks/PRACTICE.md).
 
 ## Grade 3 English Voice Lab
 

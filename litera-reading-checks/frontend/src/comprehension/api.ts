@@ -9,6 +9,7 @@ export interface StartRequest extends SessionIdentity {
   formId: string;
   difficultyTier: string;
   mode: Mode;
+  requireFresh?: boolean;
 }
 
 function post(body: unknown): RequestInit {

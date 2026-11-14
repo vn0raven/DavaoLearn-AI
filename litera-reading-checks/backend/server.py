@@ -12,8 +12,10 @@ from pydantic import ValidationError
 
 from . import speech
 from .comprehension import create_router as comprehension_router
+from .comprehension import load_forms as comprehension_forms
 from .evidence_api import create_router as evidence_router
 from .evidence_api import open_store, save_verified, verified_event
+from .fresh_checks import create_router as fresh_checks_router
 from .scoring import Submission, compare, load_forms, score_probe, to_tree_check
 
 LOG = logging.getLogger(__name__)
@@ -48,7 +50,9 @@ def create_app(evidence_path=None, evidence_config=None):
     app = FastAPI(title="BasaBridge Phonics")
     forms = load_forms()
     app.include_router(evidence_router(store))
-    app.include_router(comprehension_router(store))
+    reading_forms = comprehension_forms()
+    app.include_router(fresh_checks_router(store, forms, reading_forms))
+    app.include_router(comprehension_router(store, reading_forms))
 
     @app.get("/api/forms")
     def list_forms():
