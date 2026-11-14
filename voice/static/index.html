@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BasaBridge Voice Lab</title>
+<link rel="stylesheet" href="/style.css">
+<script src="/app.js" defer></script>
+</head>
+<body>
+<main>
+<header><p class="brand">BasaBridge</p><h1>Grade 3 Reading Lab</h1><p>Use fictional learners and adult voices for this demo.</p></header>
+<section>
+<h2>Record a reading attempt</h2>
+<label>Reading prompt <select id="prompt"><option value="0">First word · tent</option><option value="1">Fresh word · rent</option><option value="2">Word · bent</option><option value="3">Word · sent</option><option value="4">Word · dent</option><option value="5">Oral reading · garden sentence</option></select></label>
+<blockquote id="target">I put the <strong>tent</strong> in the bag.</blockquote>
+<button id="record">Record</button><button id="stop" disabled>Stop</button>
+<audio id="playback" controls hidden></audio>
+<p id="voiceStatus" role="status">Ready to record.</p>
+<p><strong>Transcript</strong> <span id="transcript">—</span></p>
+<p id="signal"></p>
+<div aria-label="Teacher review">
+<button data-score="1" disabled>Correct</button>
+<button data-score="0" disabled>Needs practice</button>
+<button data-score="retry" disabled>Retry</button>
+</div>
+<p id="score" role="status"></p>
+<p id="voiceTally">Scored phonics prompts: 0/5.</p>
+<button id="saveVoiceProbe" disabled>Use voice scores for a phonics check</button>
+<p>Set the session ID below before saving. These five fixed prompts form one demo probe. Use fresh words for a later confirmation.</p>
+</section>
+<section>
+<h2>Reading checks</h2>
+<p>Enter teacher-confirmed totals from a complete probe. A single recorded word goes in the log as an exit item.</p>
+<label id="fixtureLabel" hidden>Demo scenario <select id="fixture"></select></label>
+<form id="probe">
+<div class="fields">
+<label>Skill <select name="skill"><option value="phonics">Phonics</option><option value="oral">Oral reading</option><option value="comprehension">Comprehension</option></select></label>
+<label>Correct <input name="correct" type="number" min="0" max="200" required value="4"></label>
+<label>Total <input name="total" type="number" min="1" max="200" required value="5"></label>
+<label>Form ID <input name="form" value="A" maxlength="64" required></label>
+<label>Session ID <input name="session" value="1" maxlength="64" required></label>
+</div>
+<label class="tick"><input name="assisted" type="checkbox"> Learner received help</label>
+<label class="tick"><input name="limited" type="checkbox"> Probe unusable or text inaccessible</label>
+<button type="submit">Save check</button>
+</form>
+<label class="tick"><input id="access" type="checkbox" checked> Learner can access the assigned text</label>
+<details>
+<summary>Teacher override</summary>
+<form id="override">
+<label>Activity <input name="activity" maxlength="240" required></label>
+<label>Reason <input name="reason" maxlength="240" required></label>
+<button type="submit">Apply override</button><button id="clearOverride" type="button">Clear override</button>
+</form>
+</details>
+<p id="planStatus" role="status"></p>
+</section>
+<section>
+<h2>Recommended practice</h2>
+<p id="reason">Gather independent reading evidence.</p>
+<dl><dt>Primary</dt><dd id="primary">—</dd><dt>Secondary</dt><dd id="secondary">—</dd><dt>Active gaps</dt><dd id="gaps">—</dd><dt>Latest probes below 80%</dt><dd id="rawGaps">—</dd><dt>Recheck</dt><dd id="pending">—</dd></dl>
+<p id="review"></p>
+<ul id="evidence"></ul>
+<details><summary>Attempt history</summary><ol id="history"></ol></details>
+<button id="reset">Reset demo</button>
+</section>
+</main>
+</body>
+</html>
