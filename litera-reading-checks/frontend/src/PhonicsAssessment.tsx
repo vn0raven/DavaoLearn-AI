@@ -81,7 +81,7 @@ function Assessment({ form, learnerId, sessionId, reset, onComplete }: {
   }
 
   async function submit() {
-    if (!done || blocked || busy || receipt) return;
+    if (!done || busy || receipt) return;
     setBusy(true);
     setNote("");
     try {
@@ -102,8 +102,10 @@ function Assessment({ form, learnerId, sessionId, reset, onComplete }: {
       <p className="meta">{form.formId} · {form.difficultyTier} · {judgments.length} of 5 judged</p>
       {done ? <>
         <h2>Check complete</h2>
-        {blocked ? <p>One or more words received help. This practice check cannot produce an independent score. Use a fresh form for independent evidence.</p> :
-          <button className="primary" disabled={busy || !!receipt} onClick={submit}>{busy ? "Submitting…" : "Generate evidence"}</button>}
+        {blocked && <p>One or more words received help. Save this result as practice evidence.</p>}
+        <button className="primary" disabled={busy || !!receipt} onClick={submit}>
+          {busy ? "Submitting…" : blocked ? "Save practice evidence" : "Generate evidence"}
+        </button>
       </> : <>
         <h2 className="word" aria-label={`Word ${position + 1} of 5: ${target.word}`}>{target.word}</h2>
         <div className="controls">
@@ -134,6 +136,7 @@ function Assessment({ form, learnerId, sessionId, reset, onComplete }: {
     {receipt && <section>
       <h2>Teacher-confirmed score</h2>
       <p className="result">{receipt.event.correct}/5 · {receipt.event.score}%</p>
+      {receipt.event.assisted && <p>Assisted practice · Excluded from independent evidence</p>}
       {receipt.event.reviewRequired && <p>Within the demo review band. Confirm with a fresh independent form in another session.</p>}
       <details><summary>Assessment event</summary><pre>{JSON.stringify(receipt.event, null, 2)}</pre></details>
       <details><summary>Decision tree input</summary><pre>{JSON.stringify(receipt.treeCheck, null, 2)}</pre></details>

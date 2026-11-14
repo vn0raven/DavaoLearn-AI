@@ -33,6 +33,10 @@ JavaScript syntax checks; browser walkthrough of profile switching, full six-ite
 ## Mobile update
 Phone layouts use fixed bottom navigation, safe-area spacing, larger touch controls, and a compact header. The manifest includes PNG app icons and home-screen setup is available from Add app / Guide. Installation is offered through the browser where supported, with Android Chrome and iPhone Safari instructions otherwise. Checked at 390px and 320px iframe viewport widths; no horizontal overflow at 320px. Verified mobile navigation, install guidance, and assisted scoring after a hint. Real device installation and airplane-mode checks remain outstanding.
 
+## Grade 3 English assessment and adaptive plan
+
+[Litera Reading Checks](litera-reading-checks/README.md) saves phonics, oral reading, and comprehension evidence in SQLite. The current Grade 3 English flow reads its next steps from the [Phase 5 planner](litera-reading-checks/ADAPTIVE-PLAN.md).
+
 ## Grade 3 English Voice Lab
 
 The Python backend and its local test UI live in `voice/`. The original static site is in `dist/`. Run the voice app on the same PC as the browser.
@@ -54,6 +58,6 @@ python -m voice.server
 
 The Windows launcher binds to localhost. Microphone capture in a browser on another device needs a reachable secure origin. The existing static deployment does not run this Python backend. Use adult voices and fictional results in the demo. The server does not intentionally retain clips or transcripts. The browser retains demo probe and teacher-review history for this device only.
 
-`POST /api/plan` recomputes the recommendation from ordered check events. `POST /api/transcribe` accepts a multipart `clip` and returns text for review. `GET /health` reports server and model state. API details are at `/docs`.
+`POST /api/plan` accepts a validated Litera skill profile or ordered fictional check events for the standalone demo. `POST /api/transcribe` accepts a multipart `clip` and returns text for review. `GET /health` reports server and model state. API details are at `/docs`.
 
 The 80% cutoff and 75–85% initial review band are demo routing choices. “Ready” describes the app’s evidence for a particular probe tier. It is not a DepEd proficiency label or a phoneme-level speech score.

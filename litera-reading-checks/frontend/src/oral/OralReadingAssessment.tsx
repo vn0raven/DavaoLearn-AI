@@ -35,10 +35,11 @@ interface Props {
   passagePack?: Passage[];
   learnerId?: string;
   sharedSession?: { learnerId: string; sessionId: string };
+  onPassageOpened?: (passageId: string) => void;
   onComplete?: (result: DetailedResult) => void | Promise<void>;
 }
 
-export function OralReadingAssessment({passagePack = passages, learnerId: initialLearner = "demo-001", sharedSession, onComplete}: Props) {
+export function OralReadingAssessment({passagePack = passages, learnerId: initialLearner = "demo-001", sharedSession, onPassageOpened, onComplete}: Props) {
   validatePassages(passagePack);
   const [learnerId, setLearnerId] = useState(initialLearner);
   const [sessionId, setSessionId] = useState(newId);
@@ -61,6 +62,7 @@ export function OralReadingAssessment({passagePack = passages, learnerId: initia
     event.preventDefault();
     const passage = passagePack.find(item => item.passageId === selected);
     if (!passage) return;
+    onPassageOpened?.(passage.passageId);
     setNotice("");
     setTranscript("");
     setLearnerView(false);
