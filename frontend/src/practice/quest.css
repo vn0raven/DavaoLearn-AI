@@ -86,3 +86,35 @@
 .quest-focus .quest-workspace{max-width:64rem;margin:1.15rem auto 0;}
 .quest-focus .quest-workspace-intro .quest-zone-art{display:none;}
 .quest-focus .quest-workspace-intro .eyebrow{display:none;}
+
+/* Full-page, distraction-free quest flow. Mirrors the Read Aloud chooser. */
+.quest-screen{position:fixed;inset:0;z-index:1100;overflow-y:auto;overscroll-behavior:contain;background:linear-gradient(180deg,#f8f3ff 0%,#f5f0fd 100%);color:#30164e;}
+.quest-screen:focus{outline:none;}
+.quest-screen-page{max-width:76rem;width:100%;min-height:100dvh;margin:0 auto;padding:clamp(1rem,2.6vw,2rem);}
+.quest-screen-hero{margin-bottom:1rem;}
+.quest-choose-panel{padding:clamp(1rem,2vw,1.6rem);}
+.quest-choose-panel .spread{display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap;}
+.quest-choice-list{display:grid;gap:.85rem;margin-top:1.3rem;}
+.quest-select-card{display:flex;align-items:center;gap:1rem;min-width:0;padding:1.15rem;border:1px solid #e6d6f6;border-radius:1rem;background:linear-gradient(105deg,#faf6ff,#fff);}
+.quest-select-oral{background:linear-gradient(105deg,#f0fff7,#fff);border-color:#cdeedc;}
+.quest-select-comprehension{background:linear-gradient(105deg,#fff8e8,#fff);border-color:#f2e1b3;}
+.quest-select-card>div{min-width:0;flex:1;}
+.quest-select-card h3{font-size:1.18rem!important;margin:0 0 .3rem;}
+.quest-select-card p{margin:0;line-height:1.45;}
+.quest-select-card small{display:block;margin-top:.45rem;color:#72588c;font-weight:800;}
+.quest-select-card>.button{flex-shrink:0;}
+.quest-select-emoji{display:grid;place-items:center;width:3.2rem;height:3.2rem;flex-shrink:0;border-radius:.85rem;background:#ffffffbf;font-size:1.65rem;}
+.quest-active-shell{max-width:66rem;margin:0 auto;padding:clamp(1rem,2.1vw,1.6rem);}
+.quest-active-shell .quest-workspace{border:0;box-shadow:none;background:transparent;padding:.5rem 0 0;}
+.quest-loading{min-height:19rem;padding:2rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.7rem;text-align:center;}
+.quest-loading-symbol{font-size:3rem;}
+.quest-loading h2{font-size:clamp(1.35rem,3vw,2rem);}
+.quest-loading-spinner{height:2.25rem;width:2.25rem;border:.28rem solid #ead8ff;border-top-color:#6232a1;border-radius:50%;animation:quest-spinner 800ms linear infinite;}
+@keyframes quest-spinner{to{transform:rotate(360deg);}}
+@media (prefers-reduced-motion:reduce){.quest-loading-spinner{animation-duration:3s;}}
+@media (max-width:610px){.quest-screen-page{padding:1rem .75rem;}.quest-select-card{align-items:flex-start;flex-wrap:wrap;padding:.95rem;}.quest-select-card>.button{width:100%;}.quest-choose-panel .spread>.button{width:auto;}.quest-active-shell .quest-workspace{padding:.35rem 0 0;}.quest-screen-hero .hero-copy{max-width:87%;}}
+
+/* Portrait preview matches the active student's narrow app surface. */
+@media (min-width:900px){
+  body.litera-phone-preview .quest-screen{left:calc((100% - 390px)/2);right:calc((100% - 390px)/2);box-shadow:0 18px 60px #36224940;}
+}

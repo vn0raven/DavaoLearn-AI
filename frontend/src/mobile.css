@@ -115,3 +115,98 @@
   .modal-screen { padding: .65rem max(.65rem, env(safe-area-inset-right)) max(.65rem, env(safe-area-inset-bottom)) max(.65rem, env(safe-area-inset-left)); }
   .modal-panel { max-height: min(90vh, 90dvh); min-width: 0; }
 }
+
+/* Teacher workspace — narrow screens and desktop Portrait Preview.
+   Scoped to the app container so the 390px preview behaves like a real phone.
+   No changes to authentication, scoring, routing, or saved evidence. */
+@container litera-app (max-width: 640px) {
+  .teacher-area,
+  .teacher-area .teacher-overview,
+  .teacher-area .teacher-columns,
+  .teacher-area .teacher-content { min-width: 0; width: 100%; }
+
+  /* Statistics and actions must occupy separate rows. */
+  .teacher-area .teacher-overview {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: .75rem;
+    align-items: stretch;
+  }
+  .teacher-area .teacher-stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .6rem;
+    width: 100%;
+    min-width: 0;
+    flex: none;
+  }
+  .teacher-area .stat-tile {
+    min-width: 0;
+    width: auto;
+    padding: .8rem;
+    overflow-wrap: anywhere;
+  }
+  .teacher-area .stat-tile span {
+    min-width: 0;
+    align-items: flex-start;
+    line-height: 1.35;
+    font-size: .76rem;
+  }
+  .teacher-area .stat-tile span svg { flex-shrink: 0; }
+  .teacher-area .stat-tile strong { font-size: 1.55rem; }
+  .teacher-area .toolbar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    min-width: 0;
+    gap: .6rem;
+  }
+  .teacher-area .toolbar .button { width: 100%; min-width: 0; }
+
+  /* Let the main page scroll; avoid a nested mini-scrollbar in the queue. */
+  .teacher-area .teacher-columns {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: .85rem;
+  }
+  .teacher-area .queue-panel {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+  .teacher-area .queue-panel .section-title {
+    align-items: flex-start;
+    min-width: 0;
+  }
+  .teacher-area .queue-panel .section-title > div { min-width: 0; }
+  .teacher-area .queue-panel .section-title h2 {
+    font-size: 1.25rem;
+    line-height: 1.18;
+    overflow-wrap: anywhere;
+  }
+  .teacher-area .queue-count { flex-wrap: wrap; gap: .3rem .6rem; }
+  .teacher-area .submission-row { min-width: 0; max-width: 100%; }
+  .teacher-area .submission-desc { min-width: 0; overflow-wrap: anywhere; }
+
+  /* Keep the teacher hero readable without changing its illustration. */
+  .teacher-area .teacher-hero { padding: 1rem; }
+  .teacher-area .teacher-hero .hero-copy { max-width: 100%; min-width: 0; }
+  .teacher-area .teacher-hero h1 {
+    font-size: clamp(1.45rem, 7cqw, 1.95rem);
+    line-height: 1.14;
+    overflow-wrap: break-word;
+  }
+  .teacher-area .teacher-hero .hero-illustration { width: 75%; opacity: .12; }
+
+  /* Prevent review panels from forcing the page wider than the phone. */
+  .teacher-area .review-panel,
+  .teacher-area .review-subpanel,
+  .teacher-area .review-heading,
+  .teacher-area .review-heading-actions { min-width: 0; max-width: 100%; }
+  .teacher-area .review-heading-actions { justify-content: flex-start; }
+  .teacher-area .teacher-take-grid,
+  .teacher-area .automatic-stats,
+  .teacher-area .profile-review-panel .skill-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
