@@ -1,0 +1,32 @@
+.practice-listening {
+  display: grid;
+  gap: .65rem;
+  background: #e9faf3;
+  border: 1px solid #a5dbc6;
+  color: #2d2145;
+  border-radius: 1rem;
+  padding: .85rem;
+  margin: .85rem 0;
+  min-width: 0;
+}
+
+.practice-listening p { margin: 0; }
+.practice-listening-select { display: grid; gap: .35rem; font-weight: 650; }
+.practice-listening-word { font-size: 1.3em; }
+.practice-listening-select select {
+  width: min(100%, 24rem);
+  min-height: 44px;
+  padding: .35rem .55rem;
+  background-color: #fff;
+  border: 1px solid #775bab;
+  border-radius: .55rem;
+  color: inherit;
+}
+
+.practice-listening-actions { display: flex; flex-wrap: wrap; gap: .45rem; }
+.practice-listening .button { min-height: 44px; }
+.practice-listening :is(button, select, audio):focus-visible { outline: 3px solid #592db0; outline-offset: 2px; }
+.practice-listening :is(button, select):disabled { opacity: .64; }
+.practice-rehearsal { display: grid; justify-items: start; gap: .55rem; border-top: 1px solid #a5dbc6; padding-top: .65rem; min-width: 0; }
+.practice-rehearsal audio { width: min(100%, 24rem); }
+.quest-contrast .practice-listening { background: #fff; color: #181124; border-color: #493077; }

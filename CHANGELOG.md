@@ -1,5 +1,12 @@
 # Litera changelog
 
+## Guided practice audio
+
+- Added user-initiated English listening, slow playback, replay, and stop controls in Word Village, Story Forest, and Meaning Mountain.
+- Added local Word Village rehearsal recording, playback cancellation on navigation, and coordination between speech and the microphone.
+- Added optional packaged teacher clips for isolated sound models and practice-only audio assistance history.
+- Removed the modeled playback controls from the older root oral assessment component. Existing assessment scoring, teacher validation, and recommendation rules remain in effect.
+
 ## 2026-11-15 — Phase 9 DavaoLearn guided quests and gamification
 
 - Kept the Phase 7/8 responsive landscape UI, student activity cards, teacher review controls, Gmail sign-in, three audio takes and original assessment/evidence/decision tree.

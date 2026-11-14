@@ -55,34 +55,6 @@ export function OralReadingAssessment({passagePack = passages, learnerId: initia
   const [transcript, setTranscript] = useState("");
   const [learnerView, setLearnerView] = useState(false);
   const [audioBusy, setAudioBusy] = useState(false);
-  const [speaking, setSpeaking] = useState(false);
-  const example = useRef<SpeechSynthesisUtterance | null>(null);
-
-  useEffect(() => () => {
-    if (example.current) {
-      example.current.onend = null;
-      example.current.onerror = null;
-      window.speechSynthesis.cancel();
-    }
-  }, []);
-
-  function listen(text: string) {
-    if (!session || audioBusy || speaking || !window.speechSynthesis) return;
-    const speech = new SpeechSynthesisUtterance(text);
-    speech.lang = "en-US";
-    speech.rate = 0.84;
-    speech.onend = speech.onerror = () => {
-      example.current = null;
-      setSpeaking(false);
-    };
-    example.current = speech;
-    setSpeaking(true);
-    if (session.assistance === "independent") {
-      setSession({...session, assistance:"modeling", verified:false});
-    }
-    window.speechSynthesis.speak(speech);
-  }
-
 
   useEffect(() => { if (result) summary.current?.focus(); else if (session?.eventId) title.current?.focus(); }, [result, session?.eventId]);
 
@@ -159,8 +131,6 @@ export function OralReadingAssessment({passagePack = passages, learnerId: initia
         <h2 ref={title} tabIndex={-1} className="text-2xl font-bold">{student.passage.title}</h2>
         <div className="story-tools">
           <span>English · {words.length} words</span>
-          <button type="button" className="button" disabled={audioBusy || speaking || !window.speechSynthesis}
-            onClick={() => listen(student.passage.text)}>{speaking ? "Playing example…" : "Listen to example"}</button>
         </div>
         <p className={matched || practice ? "story-words checked" : "story-words"}>
           {tokenize(student.passage).map((part, index) => {
@@ -173,10 +143,9 @@ export function OralReadingAssessment({passagePack = passages, learnerId: initia
           })}
         </p>
         {!!Object.keys(preview).length && <p className="reading-legend"><span className="word-match">✓ Matched</span> <span className="word-retry">↻ Check again</span></p>}
-        {student.assistance !== "independent" && <p className="mt-3 text-sm">Practice attempt · An example was played.</p>}
       </section>}
       {session && <SessionAudio key={session.eventId} canAnalyze={!result && learnerView} onTranscript={setTranscript}
-        studentView={!!student} onBusy={setAudioBusy} speaking={speaking} />}
+        studentView={!!student} onBusy={setAudioBusy} />}
       {student && <aside className="panel reading-check">
         <h2 className="text-xl font-bold">Reading check</h2>
         <p className="reading-status" role="status">{previewError || (Object.keys(preview).length
@@ -184,14 +153,12 @@ export function OralReadingAssessment({passagePack = passages, learnerId: initia
         {practice && <div className="practice-word">
           <p>Practice this word</p>
           <strong className="word-retry">{practice.text}</strong>
-          <button type="button" className="button" disabled={audioBusy || speaking || !window.speechSynthesis}
-            onClick={() => listen(practice.text)}>Listen to word</button>
         </div>}
         <div className="teacher-note">
           <h3>Teacher review</h3>
           <p>Your teacher listens and confirms the marks. You can also ask them to check your reading live.</p>
         </div>
-        <button type="button" className="button primary mt-4 w-full" disabled={audioBusy || speaking}
+        <button type="button" className="button primary mt-4 w-full" disabled={audioBusy}
           onClick={() => setLearnerView(false)}>Open teacher review</button>
       </aside>}
     </div>

@@ -21,6 +21,7 @@
       {
         "kind": "guide",
         "prompt": "Teacher model",
+        "modelWord": "hunt",
         "cue": "Point to the n and t in hunt. Say the /n/ sound, then the /t/ sound without adding an extra vowel. Say hunt slowly, then blend it in one smooth read.",
         "action": "Practice the model",
         "hints": [
@@ -32,6 +33,7 @@
       {
         "kind": "choice",
         "prompt": "Blend m · i · n · t. Which word did you read?",
+        "modelWord": "tint",
         "hint": "Use the short i sound. Blend the last two sounds /n/ and /t/.",
         "options": [
           "mint",
@@ -50,6 +52,7 @@
       {
         "kind": "choice",
         "prompt": "Blend p · a · n · t. Which word did you read?",
+        "modelWord": "plant",
         "hint": "Use the short a sound, then finish with /n/ and /t/.",
         "options": [
           "past",
@@ -89,6 +92,7 @@
       {
         "kind": "guide",
         "prompt": "Hear the two ending sounds",
+        "modelWord": "went",
         "cue": "Teacher: model /n/ and /t/ in lint. Say the sounds you hear, then read lint as a whole word.",
         "action": "Practice with the teacher",
         "hints": [
@@ -100,6 +104,7 @@
       {
         "kind": "choice",
         "prompt": "Which letters spell the ending sounds /n/ and /t/ in hint?",
+        "modelWord": "sprint",
         "hint": "Listen for /n/ first, then /t/.",
         "options": [
           "st",
@@ -118,6 +123,7 @@
       {
         "kind": "choice",
         "prompt": "Which word matches p · u · n · t?",
+        "modelWord": "punt",
         "hint": "Use the short u sound, then keep both ending sounds.",
         "options": [
           "punt",

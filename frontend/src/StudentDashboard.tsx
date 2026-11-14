@@ -197,7 +197,7 @@ export function StudentDashboard({learnerId, navigation}: {learnerId:string; nav
       </section>
       <LearningPlan profile={profile}/>
       <Submissions items={submissions} refresh={()=>void refresh()} inspect={item=>void inspect(item)}/>
-      <PracticeJourney learnerId={learnerId} sessionId={session} profile={profile} onAssessment={setSkill}/>
+      <PracticeJourney learnerId={learnerId} sessionId={session} profile={profile} onAssessment={setSkill} navigationVersion={navigation?.version}/>
     </div>}
 
     {selected && <div role="dialog" aria-modal="true" aria-label="Submitted assessment details" className="modal-screen" onClick={()=>setSelected(null)}><section className="panel modal-panel" onClick={event=>event.stopPropagation()}>
