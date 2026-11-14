@@ -5,12 +5,11 @@ type Kind = "reading" | "teacher";
 const labels = { reading: "Passage read-aloud", teacher: "Teacher voice note" };
 const formats = ["audio/webm;codecs=opus", "audio/mp4", "audio/ogg;codecs=opus"];
 
-export function SessionAudio({ onTranscript, canAnalyze, studentView, onBusy, speaking }: {
+export function SessionAudio({ onTranscript, canAnalyze, studentView, onBusy }: {
   onTranscript: (text: string) => void;
   canAnalyze: boolean;
   studentView: boolean;
   onBusy: (busy: boolean) => void;
-  speaking: boolean;
 }) {
   const [clips, setClips] = useState<Partial<Record<Kind, string>>>({});
   const [active, setActive] = useState<Kind | null>(null);
@@ -164,7 +163,7 @@ export function SessionAudio({ onTranscript, canAnalyze, studentView, onBusy, sp
     {(studentView ? ["reading"] as const : ["reading","teacher"] as const).map(kind => <div key={kind} className="mt-3">
       {!studentView && <h3 className="font-semibold">{labels[kind]}</h3>}
       <div className="mt-1 flex flex-wrap gap-2">
-        {(studentView || kind === "teacher") && <button type="button" className={studentView ? "button primary" : "button"} disabled={speaking || !!active || (kind === "reading" && (!canAnalyze || analyzing))} onClick={() => void record(kind)}>
+        {(studentView || kind === "teacher") && <button type="button" className={studentView ? "button primary" : "button"} disabled={!!active || (kind === "reading" && (!canAnalyze || analyzing))} onClick={() => void record(kind)}>
           {studentView ? clips.reading ? "Read again" : "Start recording" : clips[kind] ? "Replace teacher note" : "Record teacher note"}
         </button>}
         {kind === "reading" && clips.reading && canAnalyze &&

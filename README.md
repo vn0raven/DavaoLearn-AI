@@ -33,7 +33,7 @@ In the June 2026 beginning-of-school-year CRLA results, **45% of assessed learne
 | 🎤 **Oral reading** — recorded passage reading and word accuracy | 💡 **Guided hints** — step-by-step support during practice | 📋 **Learner overview** — separate skill results and review needs |
 | 📖 **Comprehension** — questions about text | 🗺️ **Reading quests** — private progress and gentle rewards | 🔁 **Reassessment** — fresh independent checks |
 
-The advanced quest, hint and teacher-dashboard features are documented in the **enhanced Phase 6 snapshot**; verify they are merged into the branch you deploy. Speech transcription is advisory, **not automatic pronunciation grading**.
+Guided quests include optional English audio in Word Village, Story Forest, and Meaning Mountain. Speech transcription gives the teacher an advisory preview. Teacher validation determines the assessment result.
 
 ### 🖼️ Interface preview
 
@@ -76,24 +76,21 @@ Quest completion reflects **practice participation**, not confirmed reading mast
 | Teacher-reviewed evidence rules | Real browser/microphone testing | More approved reading passages |
 | Rule-based learning recommendations | Hints, quest map and teacher view | Classroom evaluation with educators |
 
-> **Project stage:** Hackathon prototype. The board reflects the inspected enhanced source snapshot, **not a claim that the public `main` branch or deployed website includes every feature**. No independent study has established improved literacy outcomes.
+> **Project stage:** Hackathon prototype. The board describes the integrated app in this checkout. An independent evaluation of literacy outcomes is future work.
 
 ## 🚀 Run locally
 
 **Requirements:** Windows 11, Python 3.11–3.12, Node.js 22.12+, Chrome or Edge. First-time installation/model downloads need internet access.
 
-From the repository root:
+From the repository root, copy `.env.example` to `.env` if needed and set the existing sign-in and teacher credentials. Run the launcher from that same folder.
 
 ```powershell
-cd .\litera-reading-checks
-npm --prefix frontend ci
-npm --prefix frontend run build
 .\Start-Litera.cmd
 ```
 
-Open **http://127.0.0.1:8765** and use **fictional learner data** with consenting adult voices for recording demonstrations. The `litera-reading-checks/` English application is separate from the earlier Filipino prototype in the repository's `dist/` directory.
+Open **http://127.0.0.1:8765** and use **fictional learner data** with consenting adult voices for recording demonstrations. The launcher builds `frontend/` and runs `backend/`. Guided spoken models use a local English system voice if available. Open **Practice** to try **Listen**, **Listen Slowly**, **Listen Again**, and **Stop**. Word Village also lets learners record and replay a short rehearsal within the current step.
 
-For testing, run `npm --prefix frontend test`. Additional setup and regression guidance is in [`litera-reading-checks/DEVELOPMENT.md`](litera-reading-checks/DEVELOPMENT.md) if that file exists in your selected branch.
+See the [developer checklist](DEVELOPMENT.md#guided-practice-audio) for voice setup, browser testing, and adding teacher-recorded sound models.
 
 ## 🛠️ Tech stack
 

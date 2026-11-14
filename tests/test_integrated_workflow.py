@@ -143,13 +143,16 @@ def test_logged_in_gamification_does_not_create_scores(env):
         'skill': activity['skill'], 'difficultyTier': activity['difficultyTier'],
         'passageId': activity.get('passageId'), 'startedAt': '2026-11-15T00:00:00Z',
         'completedAt': None, 'step': 0, 'attempts': [], 'hints': [],
-        'hintHistory': [], 'notes': '', 'intendedUse': 'practice',
+        'hintHistory': [], 'audioAssistance': [{'step': 0, 'source': 'model'}],
+        'notes': '', 'intendedUse': 'practice',
     }
     assert client.put(f"/api/student/practice/{run['runId']}", json=run).status_code == 200
     assert client.get('/api/student/practice').json()[0]['activityId'] == activity['id']
     assert client.get('/api/teacher/learners/'+learner+'/practice').status_code == 403
     teacher = {'X-Teacher-Key':'local-test-teacher-key-only'}
-    assert len(client.get('/api/teacher/learners/'+learner+'/practice', headers=teacher).json()) == 1
+    teacher_runs = client.get('/api/teacher/learners/'+learner+'/practice', headers=teacher).json()
+    assert len(teacher_runs) == 1
+    assert teacher_runs[0]['audioAssistance'] == run['audioAssistance']
     assert client.get('/api/student/profile').json()['events'] == original['events']
     assert client.get('/api/student/profile').json()['skills'] == original['skills']
     client.post('/api/auth/logout')

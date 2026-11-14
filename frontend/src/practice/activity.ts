@@ -2,10 +2,11 @@ import type { Profile, Skill } from "../models";
 type RecommendedActivity = NonNullable<Profile["recommendation"]["primary"]>;
 import type { SessionIdentity } from "../session";
 import pack from "./content.json";
+import type { PracticeAudio } from "./pronunciation";
 
 export type { Skill } from "../models";
-type Guide = { kind: "guide"; prompt: string; cue: string; action: string; hints?: [string, string, string] };
-type Choice = { kind: "choice"; prompt: string; hint: string; hints?: [string, string, string]; errorCategory?: string; options: string[];
+type Guide = { kind: "guide"; prompt: string; modelWord?: string; soundModel?: { label: string; file: string }; cue: string; action: string; hints?: [string, string, string] };
+type Choice = { kind: "choice"; prompt: string; modelWord?: string; hint: string; hints?: [string, string, string]; errorCategory?: string; options: string[];
   answer: number; feedback: string; evidenceLine?: number };
 
 export interface Activity {
@@ -51,6 +52,7 @@ export interface PracticeRun extends SessionIdentity {
   attempts: Attempt[];
   hints: number[];
   hintHistory?: { step: number; level: 1 | 2 | 3; requestedAt: string }[];
+  audioAssistance?: PracticeAudio[];
   notes: string;
   intendedUse: "practice";
 }

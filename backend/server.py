@@ -40,6 +40,9 @@ def create_app(auth=None, *, review_path=None, evidence_path=None):
     if (FRONTEND / 'assets').is_dir():
         app.mount('/assets', StaticFiles(directory=FRONTEND / 'assets'), name='assets')
 
+    if (FRONTEND / 'practice-audio').is_dir():
+        app.mount('/practice-audio', StaticFiles(directory=FRONTEND / 'practice-audio'), name='practice-audio')
+
     @app.get('/')
     @app.get('/teacher')
     def index():

@@ -8,6 +8,9 @@ import {
 import type { Activity, PracticeRun } from './activity';
 import { questFor, progressFor, zones } from './quests';
 import { readPractice, savePractice } from './storage';
+import { PracticeListening } from './PracticeListening';
+import { logPracticeAudio, practiceTargets, teacherSoundModel } from './pronunciation';
+import type { AudioSource } from './pronunciation';
 
 const names: Record<Skill, string> = { phonics: 'Phonics', oral: 'Read aloud', comprehension: 'Comprehension' };
 const art: Record<Skill, string> = { phonics: '🔤', oral: '📖', comprehension: '🧩' };
@@ -31,8 +34,8 @@ function pickActivity(profile: Profile | null, skill: Skill, records: PracticeRu
 }
 
 /** Guided activities only. These records never count as scored assessment evidence. */
-export function PracticeJourney({ learnerId, sessionId, profile, onAssessment }: {
-  learnerId: string; sessionId: string; profile: Profile | null; onAssessment: (skill: Skill) => void;
+export function PracticeJourney({ learnerId, sessionId, profile, onAssessment, navigationVersion }: {
+  learnerId: string; sessionId: string; profile: Profile | null; onAssessment: (skill: Skill) => void; navigationVersion?: number;
 }) {
   const [records, setRecords] = useState<PracticeRun[]>([]);
   const [run, setRun] = useState<PracticeRun | null>(null);
@@ -45,6 +48,7 @@ export function PracticeJourney({ learnerId, sessionId, profile, onAssessment }:
   const [syncState, setSyncState] = useState<'ok' | 'pending' | 'error'>('ok');
   const sendQueue = useRef<Promise<unknown>>(Promise.resolve());
   const latestEdit = useRef(0);
+  const latestRun = useRef<PracticeRun | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
@@ -60,7 +64,8 @@ export function PracticeJourney({ learnerId, sessionId, profile, onAssessment }:
         const saved = merged.get(pending.runId);
         if (!saved || (pending.completedAt && !saved.completedAt) ||
             pending.attempts.length > saved.attempts.length ||
-            (pending.hintHistory?.length ?? 0) > (saved.hintHistory?.length ?? 0)) {
+            (pending.hintHistory?.length ?? 0) > (saved.hintHistory?.length ?? 0) ||
+            (pending.audioAssistance?.length ?? 0) > (saved.audioAssistance?.length ?? 0)) {
           merged.set(pending.runId, pending);
         }
       }
@@ -76,8 +81,20 @@ export function PracticeJourney({ learnerId, sessionId, profile, onAssessment }:
 
   useEffect(() => { if (run) headingRef.current?.focus(); }, [run?.runId, run?.step, run?.completedAt]);
 
-  function persist(next: PracticeRun) {
+  function showRun(next: PracticeRun | null) {
+    latestRun.current = next;
     setRun(next);
+  }
+
+  function persist(next: PracticeRun) {
+    // A speech event can arrive between a render and a learner's click.
+    const previous = latestRun.current;
+    if (previous?.runId === next.runId) {
+      const used = previous.audioAssistance ?? [];
+      const fresh = next.audioAssistance ?? [];
+      if (used.length > fresh.length) next = { ...next, audioAssistance: used };
+    }
+    showRun(next);
     setRecords(before => [...before.filter(r => r.runId !== next.runId), next]);
     try { savePractice(window.localStorage, next); } catch {
       setNotice('Local browser backup is unavailable. Your progress will still be sent to the server.');
@@ -101,7 +118,7 @@ export function PracticeJourney({ learnerId, sessionId, profile, onAssessment }:
     persist(startPractice(activity, {learnerId, sessionId}, crypto.randomUUID(), time()));
   }
 
-  function resume(record: PracticeRun) { setRun(record); setWord(''); setNotice(''); }
+  function resume(record: PracticeRun) { showRun(record); setWord(''); setNotice(''); }
 
   function retry() {
     if (!run) return;
@@ -114,6 +131,16 @@ export function PracticeJourney({ learnerId, sessionId, profile, onAssessment }:
   const resumed = [...records].reverse().find(r => !r.completedAt && activities.some(a => a.id === r.activityId));
   const step = active && run ? active.steps[run.step] : undefined;
   const final = step && run && active ? feedback(run, active) : undefined;
+  const targets = active && run ? practiceTargets(active, run.step, Boolean(final)) : [];
+  const soundModel = active && run ? teacherSoundModel(active, run.step) : undefined;
+
+  function saveAudioUse(source: AudioSource) {
+    const current = latestRun.current;
+    if (!run || !current || current.runId !== run.runId) return;
+    const next = logPracticeAudio(current, run.step, source);
+    if (next !== current) persist(next);
+  }
+
   const doneStep = Boolean(run && run.attempts.some(a => a.step === run.step && a.correct !== false));
   const suggested = profile?.recommendation?.primary;
   const recommended = suggested ? selectActivity(suggested, {
@@ -163,14 +190,16 @@ export function PracticeJourney({ learnerId, sessionId, profile, onAssessment }:
       {stats.activitiesCompleted > 0 && <details className="quest-history"><summary>My practice history ({stats.activitiesCompleted})</summary><ul>{records.filter(r=>r.completedAt).slice(-8).reverse().map(item=><li key={item.runId}><strong>{activities.find(a=>a.id===item.activityId)?.title??item.activityId}</strong><span>{new Date(item.completedAt!).toLocaleString()}</span></li>)}</ul></details>}
       <p className="quest-disclaimer">Quest stars, practice XP, and badges reward participation and completed activities only. They are <strong>not grades, verified reading scores, or certificates of mastery</strong>. Only teacher-reviewed assessment evidence changes your skill status.</p>
     </> : active && step ? <div className="quest-workspace">
-      <div className="quest-workspace-head"><button className="button quiet-button" onClick={()=>setRun(null)}>← Back to my journey</button><span className="pill-status">{names[active.skill]} · Guided practice</span></div>
+      <div className="quest-workspace-head"><button className="button quiet-button" onClick={()=>showRun(null)}>← Back to my journey</button><span className="pill-status">{names[active.skill]} · Guided practice</span></div>
       <div className="quest-workspace-intro"><span className="quest-zone-art" aria-hidden="true">{art[active.skill]}</span><div><p className="eyebrow">{questFor(active).zone} · {active.difficultyTier}</p><h3 ref={headingRef} tabIndex={-1}>{active.title}</h3><p>{active.instructions}</p></div></div>
-      {run.completedAt ? <div className="quest-complete" role="status"><span aria-hidden="true">🏅</span><h3>Quest completed!</h3><p>You earned a practice star for this activity. You can repeat it anytime.</p><p>{run.attempts.length} attempts · {run.hintHistory?.length??0} hints used</p>
-        <div className="quest-footer-actions"><button className="button primary" onClick={()=>onAssessment(active.skill)}>Choose a reading assessment <Icon name="arrow" size={17}/></button><button className="button quiet-button" onClick={()=>setRun(null)}>Return to quest map</button></div><p className="subtle">Your teacher still needs to validate any assessment results. Reusing an assessment form may not count as fresh evidence.</p></div> : <>
+      {run.completedAt ? <div className="quest-complete" role="status"><span aria-hidden="true">🏅</span><h3>Quest completed!</h3><p>You earned a practice star for this activity. You can repeat it anytime.</p><p>{run.attempts.length} attempts · {run.hintHistory?.length??0} hints used · {run.audioAssistance?.length??0} audio supports used</p>
+        <div className="quest-footer-actions"><button className="button primary" onClick={()=>onAssessment(active.skill)}>Choose a reading assessment <Icon name="arrow" size={17}/></button><button className="button quiet-button" onClick={()=>showRun(null)}>Return to quest map</button></div><p className="subtle">Your teacher still needs to validate any assessment results. Reusing an assessment form may not count as fresh evidence.</p></div> : <>
         <div className="quest-step-line"><strong>Step {run.step+1} of {active.steps.length}</strong><span>{Math.round(100*(run.step+1)/active.steps.length)}% of steps</span></div>
         <div className="progress-track"><div style={{width:`${100*(run.step+1)/active.steps.length}%`}}/></div>
         {active.passage?.length ? <div className="quest-reading-passage" aria-label="Practice reading passage">{active.passage.map((line,i)=><p key={i} className={final?.line === i ? 'quest-evidence-line' : ''}>{line}</p>)}</div> : null}
         {active.wordCues?.length ? <div className="quest-word-cues"><strong>Word clues</strong><div className="quest-cue-buttons">{active.wordCues.map(c=><button className="button quiet-button" key={c.word} aria-pressed={word===c.word} onClick={()=>setWord(c.word)}>{c.word}</button>)}</div>{word && <p role="status">{active.wordCues.find(c=>c.word===word)?.cue}</p>}</div> : null}
+        {(targets.length > 0 || soundModel) && <PracticeListening key={`${run.runId}:${run.step}:${sessionId}:${navigationVersion ?? 0}`}
+          targets={targets} rehearsal={active.skill === 'phonics'} soundModel={soundModel} onListen={saveAudioUse}/>}
         <div className="quest-step"><h4>{step.prompt}</h4>{step.kind === 'guide' ? <><p className="quest-cue">{step.cue}</p>{!doneStep && <button className="button primary" onClick={()=>persist(recordAttempt(run,active,'guided'))}>{step.action} <Icon name="check" size={17}/></button>}</> : <div className="quest-options">{step.options.map((choice,i)=><button type="button" key={i} className="quest-choice" disabled={doneStep} onClick={()=>persist(recordAttempt(run,active,i))}>{choice}</button>)}</div>}
           {!doneStep && hintLevel(run)<3 && <button className="button quiet-button quest-hint" onClick={()=>persist(useHint(run,active))}>💡 Get hint {hintLevel(run)+1} of 3</button>}
           {hintText(run, active) && <div className="quest-feedback" role="status"><strong>Hint {hintLevel(run)}</strong><p>{hintText(run,active)}</p></div>}
@@ -178,8 +207,8 @@ export function PracticeJourney({ learnerId, sessionId, profile, onAssessment }:
           {doneStep && <button className="button primary mt-3" onClick={()=>persist(nextStep(run,active,time()))}>{run.step+1===active.steps.length?'Finish quest ★':'Next step'} <Icon name="arrow" size={17}/></button>}
         </div>
         <label className="field quest-note">Teacher or learner note (optional)<input maxLength={240} value={run.notes} onChange={e=>persist({...run,notes:e.target.value})} placeholder="What was helpful today?"/></label>
-        <div className="quest-footer-actions"><button className="button quiet-button" onClick={()=>setRun(null)}>Pause and return to map</button><span className="subtle">Help is allowed here. This is not a test.</span></div>
+        <div className="quest-footer-actions"><button className="button quiet-button" onClick={()=>showRun(null)}>Pause and return to map</button><span className="subtle">Help is allowed here. This is not a test.</span></div>
       </>}
-    </div> : <div role="alert" className="quest-notice">The activity content is unavailable. Please return to the quest map. <button className="button" onClick={()=>setRun(null)}>Return</button></div>}
+    </div> : <div role="alert" className="quest-notice">The activity content is unavailable. Please return to the quest map. <button className="button" onClick={()=>showRun(null)}>Return</button></div>}
   </section>;
 }

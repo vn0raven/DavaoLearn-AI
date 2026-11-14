@@ -29,6 +29,11 @@ class Hint(BaseModel):
     level: Literal[1, 2, 3]
     requestedAt: str = Field(min_length=10, max_length=40)
 
+class PracticeAudio(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    step: int = Field(ge=0, le=50)
+    source: Literal['model', 'passage', 'sentence', 'word', 'instructions', 'explanation', 'teacher-model']
+
 class Attempt(BaseModel):
     step: int = Field(ge=0, le=50)
     response: int | Literal['guided']
@@ -52,6 +57,7 @@ class PracticeRun(BaseModel):
     attempts: list[Attempt] = Field(max_length=150)
     hints: list[int] = Field(max_length=50)
     hintHistory: list[Hint] = Field(default_factory=list, max_length=150)
+    audioAssistance: list[PracticeAudio] | None = Field(default=None, max_length=200)
     notes: str = Field(max_length=240)
     intendedUse: Literal['practice']
 
@@ -91,6 +97,32 @@ class PracticeRun(BaseModel):
             by_step.setdefault(hint.step, []).append(hint.level)
         if any(levels != list(range(1, len(levels)+1)) or len(levels) > 3 for levels in by_step.values()):
             raise ValueError('Hints must be requested in order, maximum three per step.')
+        audio_used = set()
+        attempted_steps = {attempt.step for attempt in self.attempts}
+        for audio in self.audioAssistance or []:
+            if audio.step > self.step or (audio.step, audio.source) in audio_used:
+                raise ValueError('Invalid or duplicate practice audio.')
+            prompt = steps[audio.step]
+            allowed = (
+                audio.source == 'model' and self.skill == 'phonics' and prompt.get('modelWord')
+                and (prompt['kind'] == 'guide' or audio.step in attempted_steps)
+            ) or (
+                audio.source in ('passage', 'sentence') and self.skill != 'phonics' and activity.get('passage')
+            ) or (
+                audio.source == 'word' and self.skill == 'oral' and activity.get('wordCues')
+            ) or (
+                audio.source == 'teacher-model' and self.skill == 'phonics'
+                and prompt['kind'] == 'guide' and prompt.get('soundModel')
+                and re.fullmatch(r'[a-zA-Z0-9_-]+\.(mp3|wav|ogg)', prompt['soundModel'].get('file', ''), flags=re.I)
+            ) or (
+                audio.source == 'instructions' and self.skill == 'comprehension'
+            ) or (
+                audio.source == 'explanation' and self.skill == 'comprehension'
+                and prompt['kind'] == 'choice' and audio.step in attempted_steps
+            )
+            if not allowed:
+                raise ValueError('Audio source unavailable for this practice step.')
+            audio_used.add((audio.step, audio.source))
         return self
 
 class PracticeRepository:
@@ -121,6 +153,8 @@ class PracticeRepository:
         if str(run.runId) != run_id or run.learnerId != learner_id:
             raise HTTPException(403, 'Cannot save another learner\'s practice progress.')
         content = run.model_dump(mode='json')
+        if run.audioAssistance is None:
+            content.pop('audioAssistance')
         with self.connect() as db:
             db.execute('BEGIN IMMEDIATE')
             old = db.execute('SELECT learner_id, completed_at, payload FROM practice_runs WHERE run_id=?', (run_id,)).fetchone()
@@ -134,6 +168,10 @@ class PracticeRepository:
                 previous = json.loads(old['payload'])
                 if len(content['attempts']) < len(previous['attempts']) or len(content['hintHistory']) < len(previous['hintHistory']):
                     raise HTTPException(409, 'Cannot discard previously saved practice attempts or hints.')
+                previous_audio = previous.get('audioAssistance', [])
+                current_audio = content.get('audioAssistance', [])
+                if any(use not in current_audio for use in previous_audio):
+                    raise HTTPException(409, 'Cannot discard previously saved practice audio assistance.')
             db.execute('''INSERT INTO practice_runs (run_id, learner_id, activity_id, completed_at, payload)
                 VALUES (?,?,?,?,?) ON CONFLICT(run_id) DO UPDATE SET completed_at=excluded.completed_at,payload=excluded.payload''',
                 (run_id, learner_id, run.activityId, run.completedAt, json.dumps(content)))

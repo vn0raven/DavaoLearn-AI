@@ -57,7 +57,7 @@ def test_student_persistence_teacher_visibility_and_no_assessment_evidence(app):
     assert client.put(f"/api/student/practice/{finished['runId']}",json=finished).status_code == 200
     assert len(client.get('/api/student/practice').json()) == 1
     assert client.get('/api/student/practice').json()[0]['completedAt']
-    assert not any(route.path.startswith('/api/evidence') for route in app.routes)
+    assert client.get('/api/evidence/learners/student-a').status_code == 404
 
 
 def test_user_cannot_write_another_learner_or_another_id(app):
@@ -89,3 +89,31 @@ def test_teacher_key_is_required_when_not_overridden(tmp_path):
     client=TestClient(api)
     result=client.get('/api/teacher/learners/student-a/practice')
     assert result.status_code in (403,503)
+
+
+def test_audio_assistance_round_trip_and_completed_replay(app):
+    client = TestClient(app)
+    run = blank_run()
+    route = f"/api/student/practice/{run['runId']}"
+    assert client.put(route, json=run).status_code == 200
+    audio = [{'step': 0, 'source': 'model'}]
+    listened = {**run, 'audioAssistance': audio}
+    assert client.put(route, json=listened).status_code == 200
+    assert client.get('/api/teacher/learners/student-a/practice').json()[0]['audioAssistance'] == audio
+    assert client.put(route, json=run).status_code == 409
+    finished = complete_run(listened.copy())
+    assert client.put(route, json=finished).status_code == 200
+    assert client.put(route, json=finished).status_code == 200
+    assert len(client.get('/api/student/practice').json()) == 1
+
+
+@pytest.mark.parametrize('audio', [
+    [{'step': 0, 'source': 'model'}, {'step': 0, 'source': 'model'}],
+    [{'step': 0, 'source': 'instructions'}],
+    [{'step': 0, 'source': 'model', 'transcript': 'a word'}],
+    [{'step': 1, 'source': 'model'}],
+])
+def test_invalid_audio_assistance_rejected(app, audio):
+    client = TestClient(app)
+    run = {**blank_run(), 'audioAssistance': audio}
+    assert client.put(f"/api/student/practice/{run['runId']}", json=run).status_code == 422
