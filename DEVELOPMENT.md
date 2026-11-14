@@ -17,6 +17,10 @@ Pilot phonics words and practice narration need a teacher listening check on the
 3. Run `.\Start-Litera.cmd`. Open `http://127.0.0.1:8765` in Chrome and repeat the checks in Edge. If port 8765 is in use, close the previous Litera server with Ctrl+C or set another port in `.env` and open that port.
 4. If no English voice appears, install an English desktop speech voice through Windows language settings. Restart Litera and reopen the quest. Use live teacher modeling when an on-device English voice is unavailable or sounds unsuitable. On a phone, use an HTTPS site for microphone access.
 
+### Portrait preview
+
+On a desktop at least 900 CSS pixels wide, use **Portrait preview** in the header to switch between a 390px layout and the regular desktop view. The preview changes layout in place. The active session, practice recording, and teacher verdict state stay available. Handsets use the portrait layout automatically. Use DevTools to test the other portrait widths and a real iPhone over HTTPS to check Safari keyboard, safe areas, and microphone permission. The Windows launcher binds to localhost on the PC.
+
 ### Verification checklist
 
 | Route | Checks |
@@ -25,7 +29,7 @@ Pilot phonics words and practice narration need a teacher listening check on the
 | Story Forest | Choose the whole story, a sentence, and a target word. Changing the selection or leaving the practice step should cancel the previous playback. |
 | Meaning Mountain | Play the story and the activity instructions. Confirm that the answer explanation becomes available after an answer attempt. |
 | Assessments | Open phonics, oral reading, and comprehension assessments. Confirm the reading-model controls are absent and compare the teacher-validated skill profile before and after guided practice. |
-| Accessibility | Tab through the input and buttons with visible focus. Use Enter or Space to play. Check the messages for missing voices, denied microphone permission, and speech errors. Verify a backend request returns `200 audio/wav` in Network tools. Check touch controls and overflow at 360px and 390px. |
+| Accessibility | Tab through the input and buttons with visible focus. Use Enter or Space to play. Check the messages for missing voices, denied microphone permission, and speech errors. Verify a backend request returns `200 audio/wav` in Network tools. Check touch controls and overflow at 360×800, 375×667, 390×844, 393×852, and 430×932. Switch Portrait preview on and off during a practice or review and confirm the current state remains available. |
 
 Run the automated checks from the repository root.
 

@@ -88,7 +88,7 @@ In the repository root, copy `.env.example` to `.env` if needed. Set the Gmail s
 .\Start-Litera.cmd
 ```
 
-Open **http://127.0.0.1:8765** and use **fictional learner data** with consenting adult voices for recording demonstrations. The launcher builds `frontend/` and runs `backend/`. FastAPI serves English practice audio from a local synthesis engine. Windows uses an installed English desktop voice. A local browser voice is available as a fallback where supported. Open **Practice** to try **Listen**, **Listen Slowly**, **Listen Again**, and **Stop**. Word Village also lets learners record and replay a short rehearsal within the current step.
+Open **http://127.0.0.1:8765**. On desktop, click **Portrait preview** to rehearse the phone layout. Use **fictional learner data** with consenting adult voices for recording demonstrations. The launcher builds `frontend/` and runs `backend/`. FastAPI serves English practice audio from a local synthesis engine. Windows uses an installed English desktop voice. A local browser voice is available as a fallback where supported. Open **Practice** to try **Listen**, **Listen Slowly**, **Listen Again**, and **Stop**. Word Village also lets learners record and replay a short rehearsal within the current step.
 
 The [repository audit](docs/UI-INTEGRATION.md) describes the source branches and demo verification. See the [developer checklist](DEVELOPMENT.md#guided-practice-audio) for voice setup, browser testing, and adding teacher-recorded sound models.
 
