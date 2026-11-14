@@ -1,0 +1,210 @@
+[
+  {
+    "label": "A · Phonics and oral reading",
+    "checks": [
+      {
+        "skill": "phonics",
+        "correct": 45,
+        "total": 100,
+        "session": "1",
+        "form": "fixture-A"
+      },
+      {
+        "skill": "oral",
+        "correct": 70,
+        "total": 100,
+        "session": "1",
+        "form": "fixture-A"
+      },
+      {
+        "skill": "comprehension",
+        "correct": 85,
+        "total": 100,
+        "session": "1",
+        "form": "fixture-A"
+      }
+    ]
+  },
+  {
+    "label": "B · Oral reading and comprehension",
+    "checks": [
+      {
+        "skill": "phonics",
+        "correct": 90,
+        "total": 100,
+        "session": "1",
+        "form": "fixture-A"
+      },
+      {
+        "skill": "oral",
+        "correct": 40,
+        "total": 100,
+        "session": "1",
+        "form": "fixture-A"
+      },
+      {
+        "skill": "comprehension",
+        "correct": 35,
+        "total": 100,
+        "session": "1",
+        "form": "fixture-A"
+      }
+    ]
+  },
+  {
+    "label": "C · All three gaps",
+    "checks": [
+      {
+        "skill": "phonics",
+        "correct": 30,
+        "total": 100,
+        "session": "1",
+        "form": "fixture-A"
+      },
+      {
+        "skill": "oral",
+        "correct": 35,
+        "total": 100,
+        "session": "1",
+        "form": "fixture-A"
+      },
+      {
+        "skill": "comprehension",
+        "correct": 40,
+        "total": 100,
+        "session": "1",
+        "form": "fixture-A"
+      }
+    ]
+  },
+  {
+    "label": "D · Comprehension",
+    "checks": [
+      {
+        "skill": "phonics",
+        "correct": 85,
+        "total": 100,
+        "session": "1",
+        "form": "fixture-A"
+      },
+      {
+        "skill": "oral",
+        "correct": 90,
+        "total": 100,
+        "session": "1",
+        "form": "fixture-A"
+      },
+      {
+        "skill": "comprehension",
+        "correct": 45,
+        "total": 100,
+        "session": "1",
+        "form": "fixture-A"
+      }
+    ]
+  },
+  {
+    "label": "E · Phonics",
+    "checks": [
+      {
+        "skill": "phonics",
+        "correct": 60,
+        "total": 100,
+        "session": "1",
+        "form": "fixture-A"
+      },
+      {
+        "skill": "oral",
+        "correct": 90,
+        "total": 100,
+        "session": "1",
+        "form": "fixture-A"
+      },
+      {
+        "skill": "comprehension",
+        "correct": 95,
+        "total": 100,
+        "session": "1",
+        "form": "fixture-A"
+      }
+    ]
+  },
+  {
+    "label": "F · Mixed extension",
+    "checks": [
+      {
+        "skill": "phonics",
+        "correct": 90,
+        "total": 100,
+        "session": "1",
+        "form": "fixture-A"
+      },
+      {
+        "skill": "oral",
+        "correct": 90,
+        "total": 100,
+        "session": "1",
+        "form": "fixture-A"
+      },
+      {
+        "skill": "comprehension",
+        "correct": 90,
+        "total": 100,
+        "session": "1",
+        "form": "fixture-A"
+      }
+    ]
+  },
+  {
+    "label": "G · Borderline review",
+    "checks": [
+      {
+        "skill": "phonics",
+        "correct": 79,
+        "total": 100,
+        "session": "1",
+        "form": "fixture-A"
+      },
+      {
+        "skill": "oral",
+        "correct": 81,
+        "total": 100,
+        "session": "1",
+        "form": "fixture-A"
+      },
+      {
+        "skill": "comprehension",
+        "correct": 78,
+        "total": 100,
+        "session": "1",
+        "form": "fixture-A"
+      }
+    ]
+  },
+  {
+    "label": "H · At the cutoff",
+    "checks": [
+      {
+        "skill": "phonics",
+        "correct": 80,
+        "total": 100,
+        "session": "1",
+        "form": "fixture-A"
+      },
+      {
+        "skill": "oral",
+        "correct": 80,
+        "total": 100,
+        "session": "1",
+        "form": "fixture-A"
+      },
+      {
+        "skill": "comprehension",
+        "correct": 80,
+        "total": 100,
+        "session": "1",
+        "form": "fixture-A"
+      }
+    ]
+  }
+]
