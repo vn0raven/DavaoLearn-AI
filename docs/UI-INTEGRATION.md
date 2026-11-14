@@ -22,6 +22,10 @@
 
 ## Demonstration verification
 
+- Production TypeScript and Vite build passed.
+- 41 frontend tests passed. 35 Python tests passed, including the real WAV endpoint test. The optional live Whisper inference test was skipped.
+- Authentication and learner/teacher separation were exercised against a temporary SQLite database. The application launcher remains at the repository root.
+
 The end-to-end check uses fictional accounts, a test inbox and a fake microphone. It exercises signup, rejected and valid login, hidden/shown password, five phonics recordings, teacher validation, a 60% result, Word Village recommendation, real backend WAV decoding and playback, slow audio, replay, stop, recording handoff, a hint, quest completion, and teacher review. The profile is identical before and after practice completion. Story Forest narration and Meaning Mountain feedback were checked separately, including the server-unavailable fallback with a test local voice.
 
 Automated mobile emulation covers 360×800, 375×667, 390×844, 393×852, and 430×932. Tablet and desktop checks cover 768×1024 and 1366×768. Physical iOS Safari safe areas and keyboard, the Windows batch launcher and installed Windows voice, live Gmail delivery, and acoustic suitability for local learners require a device check.

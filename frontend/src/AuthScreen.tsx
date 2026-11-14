@@ -34,9 +34,7 @@ export function AuthScreen({ onVerify }: { onVerify: (account: Account) => void 
   const emailField = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (busy) return;
-    if (sent) passwordField.current?.focus();
-
+    if (sent && !busy) passwordField.current?.focus();
   }, [sent, busy]);
 
   function editEmail() {
@@ -111,7 +109,7 @@ export function AuthScreen({ onVerify }: { onVerify: (account: Account) => void 
       <h2 id="auth-title">{sent ? "Check your email" : mode === "login" ? "Log in to Litera" : "Create your Litera account"}</h2>
       {!sent && <p>Enter your email and we’ll send you a temporary password.</p>}
       {sent && <div className="auth-email-status">
-        <p>{mode === "signup" ? "Use the temporary password we sent to finish signing up." : "Use the password from your latest Litera email."} Check spam if needed. The password expires after 15 minutes.</p>
+        <p>{mode === "signup" ? "Enter the temporary password from your signup email." : "Use the password from your latest Litera email."} Check spam if needed. The password expires after 15 minutes.</p>
       </div>}
       <form onSubmit={submit} aria-busy={busy}>
         <label className="field">Email address
@@ -126,7 +124,7 @@ export function AuthScreen({ onVerify }: { onVerify: (account: Account) => void 
               autoComplete="one-time-code" autoCapitalize="none" spellCheck={false} maxLength={64} required disabled={busy} />
           </label>
           <button type="button" className="button quiet-button" aria-controls="litera-password"
-            onClick={() => setShowPassword(visible => !visible)}>{showPassword ? "Hide password" : "Show password"}</button>
+            disabled={busy} onClick={() => setShowPassword(visible => !visible)}>{showPassword ? "Hide password" : "Show password"}</button>
         </div>}
         <button type="submit" className="button primary auth-continue" disabled={busy}>
           {busy ? "Please wait…" : sent ? (mode === "signup" ? "Create account and continue" : "Log in") : "Email me a password"}

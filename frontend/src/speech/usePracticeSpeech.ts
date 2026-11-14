@@ -122,7 +122,10 @@ export function usePracticeSpeech(
       setBackend("playing");
       onStart(target);
     } catch {
-      if (active.current === request) setBackend("unavailable");
+      if (active.current === request) {
+        haltBackend();
+        setBackend("unavailable");
+      }
     } finally {
       window.clearTimeout(timeout);
       if (active.current === request) active.current = null;

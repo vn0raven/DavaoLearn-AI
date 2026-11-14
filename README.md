@@ -94,10 +94,10 @@ The [repository audit](docs/UI-INTEGRATION.md) describes the source branches and
 
 ## 🛠️ Tech stack
 
-**Frontend:** React · TypeScript · Vite  
-**Backend:** FastAPI · Python · SQLite  
-**Speech:** Local `faster-whisper` transcription for teacher review · local TTS for guided practice
-**Recommendations:** Transparent, rule-based decision tree
+- **Frontend** — React, TypeScript, Vite
+- **Backend** — FastAPI, Python, SQLite
+- **Speech** — Local `faster-whisper` transcription and guided-practice TTS
+- **Recommendations** — Rule-based decision tree
 
 ## 📚 References
 
