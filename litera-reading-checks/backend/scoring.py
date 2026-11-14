@@ -2,7 +2,7 @@ import json
 import re
 from pathlib import Path
 from threading import Lock
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
@@ -104,7 +104,28 @@ def score_probe(form, submission):
         correct=correct, score=score, reviewRequired=REVIEW_BAND[0] <= score <= REVIEW_BAND[1],
     )
 
-def to_tree_check(event: PhonicsEvidence):
+class TreeEvidence(Protocol):
+    @property
+    def skill(self) -> str: ...
+    @property
+    def formId(self) -> str: ...
+    @property
+    def sessionId(self) -> str: ...
+    @property
+    def difficultyTier(self) -> str: ...
+    @property
+    def kind(self) -> str: ...
+    @property
+    def correct(self) -> int: ...
+    @property
+    def total(self) -> int: ...
+    @property
+    def assisted(self) -> bool: ...
+    @property
+    def usable(self) -> bool: ...
+
+
+def to_tree_check(event: TreeEvidence):
     """Exact payload accepted by the existing voice.tree.Check model."""
     return {
         "skill": event.skill, "form": event.formId, "session": event.sessionId,

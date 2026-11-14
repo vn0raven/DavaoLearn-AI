@@ -38,3 +38,29 @@ test("duplicate retries do not add evidence and foreign sessions are rejected", 
   assert.throws(()=>addEvidence({...identity,sessionId:"s2"},[],event),/different learner or session/);
   assert.throws(()=>addEvidence(identity,[event],{...event,event:{...event.event,eventId:"new"}}),/already has/);
 });
+
+function comprehension(assisted = false): Extract<ReadingEvidence, {skill:"comprehension"}> {
+  const evidence = { skill:"comprehension", kind:"probe", correct:4, total:5, assisted, usable:true } as const;
+  return {
+    skill:"comprehension",
+    event:{ ...identity, ...evidence, eventId:"c", formId:"COMP-B", passageId:"plant-labels",
+      passageVersion:"1.0.0", difficultyTier:"short-text", score:80, timestamp:"2026-11-14T10:00:00Z" },
+    check:{...evidence, form:"COMP-B", session:identity.sessionId, tier:"short-text"},
+  };
+}
+
+test("comprehension shares the session and enters the existing handoff under its own skill", () => {
+  const entry = comprehension();
+  const entries = addEvidence(identity, [phonics, oral()], entry);
+  const handoff = buildHandoff(identity, addEvidence(identity, entries, entry));
+  assert.equal(handoff.events.length, 3);
+  assert.deepEqual(handoff.independentChecks[2], entry.check);
+  assert.ok(!/responses|answerId/.test(JSON.stringify(handoff)));
+});
+
+test("assisted comprehension remains in the event ledger and out of independent checks", () => {
+  const entry = comprehension(true);
+  const handoff = buildHandoff(identity, addEvidence(identity, [phonics, oral()], entry));
+  assert.equal(handoff.events[2], entry.event);
+  assert.deepEqual(handoff.independentChecks.map(check => check.skill), ["phonics", "oral"]);
+});

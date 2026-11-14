@@ -1,4 +1,5 @@
 import type { Receipt } from "./contracts";
+import type { Receipt as ComprehensionReceipt } from "./comprehension/types";
 import type { DetailedResult } from "./oral/types";
 import { toTreeCheck } from "./oral/scoring";
 
@@ -8,7 +9,8 @@ export interface SessionIdentity {
 }
 export type ReadingEvidence =
   | { skill: "phonics"; event: Receipt["event"]; check: Receipt["treeCheck"] }
-  | { skill: "oral"; event: DetailedResult["event"]; check: ReturnType<typeof toTreeCheck> };
+  | { skill: "oral"; event: DetailedResult["event"]; check: ReturnType<typeof toTreeCheck> }
+  | { skill: "comprehension"; event: ComprehensionReceipt["event"]; check: ComprehensionReceipt["treeCheck"] };
 
 export function addEvidence(
   identity: SessionIdentity, entries: readonly ReadingEvidence[], next: ReadingEvidence,

@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
 
 from . import speech
+from .comprehension import create_router as comprehension_router
 from .scoring import Conflict, DemoReceiver, Submission, compare, load_forms
 
 LOG = logging.getLogger(__name__)
@@ -42,6 +43,7 @@ def create_app():
     app = FastAPI(title="BasaBridge Phonics")
     forms = load_forms()
     receiver = DemoReceiver()
+    app.include_router(comprehension_router())
 
     @app.get("/api/forms")
     def list_forms():
