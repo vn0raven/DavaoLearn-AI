@@ -65,3 +65,18 @@
   .auth-home { grid-template-columns: minmax(0, 1fr); max-width: 32rem; }
   .auth-activities { margin-top: .95rem; }
 }
+.auth-password {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: .45rem;
+  margin-top: .65rem;
+}
+.auth-password .button { min-height: 2.85rem; }
+.auth-illustration {
+  max-width: 34rem;
+  aspect-ratio: 2.3;
+  margin-top: 1.15rem;
+  border-radius: 1.25rem;
+  background: #eee0ff url('./assets/reading-hero.webp') center / cover no-repeat;
+}

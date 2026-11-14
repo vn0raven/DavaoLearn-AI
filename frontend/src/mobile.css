@@ -1,0 +1,62 @@
+/* Shared safe areas and compact portrait layout for the integrated portals. */
+.litera-header-inner, .lesson-home, .reading-page {
+  --gutter: clamp(.875rem, 2.5vw, 2.5rem);
+  padding-left: max(var(--gutter), env(safe-area-inset-left));
+  padding-right: max(var(--gutter), env(safe-area-inset-right));
+}
+.litera-header { padding-top: env(safe-area-inset-top); }
+#root { min-height: 100vh; min-height: 100dvh; padding-bottom: env(safe-area-inset-bottom); }
+#root :is(button, a, input, textarea, select, summary):focus-visible { outline: 3px solid #6737ab; outline-offset: 2px; }
+#root :is(#lessons, #journey, #progress, #teacher-home, #queue, #progress-review) { scroll-margin-top: 6rem; }
+
+@media (max-width: 640px) {
+  #root :is(#lessons, #journey, #progress, #teacher-home, #queue, #progress-review) { scroll-margin-top: 1rem; }
+  .litera-header { position: static; }
+  .litera-header-inner { column-gap: .5rem; row-gap: .3rem; }
+  .litera-header nav.app-nav {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    gap: .2rem;
+    overflow: visible;
+    padding-bottom: .15rem;
+  }
+  .app-nav :is(button, a) {
+    justify-content: center;
+    flex-direction: column;
+    text-align: center;
+    white-space: normal;
+    min-height: 48px;
+    font-size: .75rem;
+    font-weight: 750;
+    line-height: 1.1;
+    padding: .3rem .15rem;
+  }
+  .litera-header .button, .lesson-home .button, .reading-page .button,
+  .quest-choice, .verdict-button, .reading-word-chip { min-height: 44px; min-width: 44px; }
+  .lesson-home :is(input:not([type="checkbox"]):not([type="radio"]), textarea, select) {
+    font-size: 1rem;
+    min-width: 0;
+    max-width: 100%;
+    scroll-margin-block: 1rem;
+  }
+  .auth-home { gap: 1rem; padding-block: 1rem 1.4rem; }
+  .auth-intro { padding: .9rem 1rem; border-radius: 1.1rem; background: #ede1ff; }
+  .auth-intro h1 { font-size: clamp(1.7rem, 6.2vw, 2.15rem); }
+  .auth-intro p { font-size: .95rem; margin-top: .3rem; }
+  .auth-illustration { display: none; }
+  .auth-panel { min-width: 0; }
+  .litera-hero { flex-wrap: wrap; gap: .65rem; }
+  .hero-copy { flex-basis: 100%; }
+  .hero-actions { margin-left: 0; }
+  .lesson-card { min-height: 0; }
+  .learning-panel, .submitted-panel, .empty-results { min-height: 0; }
+  .lesson-home audio { max-width: 100%; }
+  .lesson-home :is(.take-grid, .skill-grid, .teacher-columns, .quest-zones) { min-width: 0; }
+  .profile-review-panel .skill-grid { grid-template-columns: minmax(0, 1fr); }
+  .teacher-take-grid { grid-template-columns: minmax(0, 1fr); }
+  .teacher-columns :is(.panel, .submission-list, .submission-row, .take-card) { min-width: 0; }
+  .teacher-columns .submission-row { gap: .4rem; overflow-wrap: anywhere; }
+  .modal-screen { padding: .65rem max(.65rem, env(safe-area-inset-right)) max(.65rem, env(safe-area-inset-bottom)) max(.65rem, env(safe-area-inset-left)); }
+  .modal-panel { max-height: min(90vh, 90dvh); min-width: 0; }
+}
