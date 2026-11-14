@@ -2,6 +2,18 @@
 
 The repository root is the canonical integrated app. See the [integration audit](docs/UI-INTEGRATION.md) for the branch comparison. Older launchers are documented in [the legacy index](legacy/README.md).
 
+## Canonical localhost startup
+
+Run `.\Start-Litera.cmd` from the repository root on Windows. The script delegates to `scripts/start_litera.py`, which uses the root `frontend/` and `backend/`, tracks dependency and build fingerprints inside the Python environment, and serves only on `127.0.0.1`. SQLite creates missing tables on startup and reuses existing databases in `.litera-data/` or their configured paths. Keep the terminal open and press Ctrl+C when finished. On Windows, `.env` supplies the configured port, Gmail sender, and private teacher key.
+
+First launch or dependency changes may require access to the package registries. The first Whisper estimate may download the local model. To rehearse without a fresh Gmail request, verify a fictional account before the demo and keep the same signed-in browser session. The optional STT test runs when `LITERA_TEST_AUDIO` points to a synthetic or consented audio file.
+
+## Assessment checks
+
+Before displaying a form, the integrated student app records its exposure. The quest reassessment action requests an unseen form in the same approved comparison group as the latest eligible prior probe, matching tier, version, rubric, and conditions. Both assessment submissions and viewed forms contribute to the exposure check, including oral and comprehension forms sharing a passage. The app uses a new session for an assigned form. Configure `LITERA_EVIDENCE_CONFIG` only with documented educator approvals. The demo ships with an empty comparability map and shows the teacher-review message.
+
+The active submission repository allows one assessment per skill and session, and one submission per form for each learner. It retains all prior records and review results. Old pending duplicates are blocked at finalization when a matching event already exists. Blank speech estimates stay uncertain and can be reviewed by a teacher using the original audio. The scores, review band, two-check confirmation rule, and decision tree continue to use the existing evidence modules.
+
 ## Guided practice audio
 
 `POST /api/practice/tts` accepts `runId`, `step`, `targetId`, and `speed` (`normal` or `slow`). It authenticates the learner, resolves the current saved practice step, and reads only matching authored content. Phonics follow-up words and comprehension explanations require a recorded practice attempt on that step. The service returns PCM WAV, uses a bounded in-memory cache, and deletes temporary synthesis files. Practice listening is logged after playback starts. The microphone rehearsal stays in tab memory for that step.
@@ -44,4 +56,4 @@ npm --prefix frontend run build
 
 Use a short, teacher-approved recording with permission to distribute it. Put an MP3, WAV or Ogg file in `frontend/public/practice-audio/` and add an optional `soundModel` field to the appropriate phonics guide step in `frontend/src/practice/content.json`. Example: `"soundModel": {"label": "Teacher model of the final sounds", "file": "final-nt.wav"}`. Rebuild and restart. The recording appears alongside the word model in guided practice. Leave the field unset when the teacher will demonstrate live. No voice recordings ship with this update.
 
-Audio model and narration use is stored in practice history as one entry per step and source type once playback starts. Rehearsal clips stay in tab memory until the step closes. The practice endpoint stores assistance metadata alongside hints and attempts and retains compatibility with saved runs created before this field existed. Assessment endpoints, evidence processing, and recommendation rules are unchanged.
+Audio model and narration use is stored in practice history as one entry per step and source type once playback starts. Rehearsal clips stay in tab memory until the step closes. The practice endpoint stores assistance metadata alongside hints and attempts and retains compatibility with saved runs created before this field existed. Listening is stored independently of assessment scores and recommendations.

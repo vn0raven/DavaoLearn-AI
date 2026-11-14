@@ -241,6 +241,12 @@ def test_fresh_check_requires_approval_and_reserves_one_unseen_form(env):
     assert client.post(url).json()['formId'] is None
     assert client.post('/api/student/assessment-exposure',
                        data={'formId':'PHONICS-B', 'sessionId':str(uuid4())}).status_code == 409
+    import json
+    body = {'attempt':str(uuid4()), 'session':fresh['sessionId'], 'form':fresh['formId'],
+            'slots':json.dumps([[i,1] for i in range(5)])}
+    files = [('clips',('demo.webm',b'synthetic-sample','audio/webm')) for _ in range(5)]
+    assert client.post('/api/recording-submissions', data={**body, 'session':str(uuid4())}, files=files).status_code == 409
+    assert client.post('/api/recording-submissions', data=body, files=files).status_code == 201
 
 
 def test_seen_passage_in_other_skill_is_not_a_fresh_form(env):
@@ -268,3 +274,20 @@ def test_canonical_server_keeps_teacher_and_legacy_evidence_routes_separate(env)
     assert client.post('/api/teacher/overrides', json={}).status_code == 403
     assert client.get(f'/api/evidence/learners/{learner}').status_code == 404
     assert client.post('/api/evidence/oral', json={}).status_code == 404
+
+
+def test_teacher_cannot_validate_historic_pending_duplicate(env):
+    client, _ = env
+    learner = login(env)
+    attempt, session = submit_recordings(client, takes=1)
+    headers = {'X-Teacher-Key':'local-test-teacher-key-only'}
+    marks = {'marks':['CORRECT']*3+['INCORRECT']*2, 'selectedTakes':[1]*5,
+             'verified':True, 'assisted':False}
+    assert client.post(f'/api/teacher/submissions/{attempt}/review', headers=headers, json=marks).status_code == 200
+    baseline = client.get('/api/student/profile').json()
+    older_duplicate = str(uuid4())
+    with client.app.state.reviews.connect() as db:
+        db.execute('INSERT INTO submissions (id,learner,session,skill,form,created_at) VALUES (?,?,?,?,?,?)',
+                   (older_duplicate, learner, session, 'phonics', 'PHONICS-A', '2026-11-15T00:00:00Z'))
+    assert client.post(f'/api/teacher/submissions/{older_duplicate}/review', headers=headers, json=marks).status_code == 409
+    assert client.get('/api/student/profile').json() == baseline

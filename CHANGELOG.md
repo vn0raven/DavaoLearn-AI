@@ -1,5 +1,12 @@
 # Litera changelog
 
+## Localhost showcase stabilization
+
+- Records assessment exposure before display and assigns a fresh check only when an unseen form matches an approved comparison group. The quest routes unavailable checks to teacher review.
+- Rejects duplicate form submissions and duplicate attempts for the same skill and session. Historical pending duplicates cannot be finalized over an existing assessment.
+- Shows blank or unusable oral transcripts as uncertain, including previously stored blank previews. Original teacher evidence stays in SQLite.
+- Improves the root Windows launcher with dependency and build checks, configured URLs, and occupied-port handling. Keeps all existing paths and legacy launchers available.
+
 ## Phase 10 portrait and TTS integration
 
 - Ported the Phase 10 desktop portrait preview into the active app. The same practice and review components stay mounted when the preview switches.
