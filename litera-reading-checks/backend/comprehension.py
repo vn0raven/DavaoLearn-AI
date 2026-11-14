@@ -9,6 +9,8 @@ from typing import Literal
 from fastapi import APIRouter, HTTPException
 from pydantic import Field, model_validator
 
+from .evidence import AssessmentEvent
+from .evidence_api import save_verified
 from .scoring import Identifier, Model, to_tree_check
 
 Mode = Literal["independent", "assisted"]
@@ -90,24 +92,6 @@ class Submission(Model):
     assisted: bool
 
 
-class Event(Model):
-    eventId: Identifier
-    learnerId: Identifier
-    skill: Literal["comprehension"] = "comprehension"
-    formId: Identifier
-    passageId: Identifier
-    passageVersion: str
-    sessionId: Identifier
-    difficultyTier: Identifier
-    kind: Literal["probe"] = "probe"
-    correct: int
-    total: int
-    score: float
-    assisted: bool
-    usable: Literal[True] = True
-    timestamp: datetime
-
-
 def score_responses(form, responses):
     questions = {question.questionId: question for question in form.questions}
     selected = {}
@@ -140,7 +124,7 @@ class Attempt:
     receipt: dict | None = None
 
 
-def create_router():
+def create_router(store):
     router = APIRouter(prefix="/api/comprehension")
     forms = load_forms()
     attempts: dict[str, Attempt] = {}
@@ -172,9 +156,13 @@ def create_router():
                 if prior.start != start or prior.interrupted:
                     raise HTTPException(409, "This attempt ID is already in use. Start a new attempt.")
             else:
-                if session_key in completed_sessions:
+                saved = store.prior_events(start.learnerId, "comprehension", form.difficultyTier)
+                if session_key in completed_sessions or any(
+                    event.sessionId == start.sessionId and event.submissionStatus == "complete" for event in saved
+                ):
                     raise HTTPException(409, "This session already has a result for this tier. Start a separate session.")
-                if start.mode == "independent" and (form_key in exposed_forms or passage_key in exposed_passages):
+                seen = any(event.formId == form.formId or event.passageId == form.passageId for event in saved)
+                if start.mode == "independent" and (seen or form_key in exposed_forms or passage_key in exposed_passages):
                     raise HTTPException(409, "This learner has seen this passage or form. Choose a fresh passage or Assisted practice.")
                 attempts[start.eventId] = Attempt(start)
                 exposed_forms.add(form_key)
@@ -189,14 +177,48 @@ def create_router():
                 raise HTTPException(404, "Attempt not found.")
             if attempt.receipt:
                 raise HTTPException(409, "This assessment has already been submitted.")
+            form = forms[attempt.start.formId]
+            original = attempt.start.model_dump(mode="json")
+            event = AssessmentEvent(
+                eventId=event_id, learnerId=attempt.start.learnerId, sessionId=attempt.start.sessionId,
+                skill="comprehension", formId=form.formId, formVersion=form.version,
+                passageId=form.passageId, difficultyTier=form.difficultyTier,
+                assisted=attempt.start.mode == "assisted", usable=False, timestamp=datetime.now(UTC),
+                submissionStatus="interrupted",
+            )
+            save_verified(store, event, original)
             attempt.interrupted = True
+
+    def build_receipt(saved, responses):
+        event = saved.model_dump(mode="json", include={
+            "eventId", "learnerId", "sessionId", "skill", "formId", "passageId",
+            "difficultyTier", "kind", "correct", "total", "assisted", "usable", "timestamp",
+        })
+        return {
+            "event": {**event, "passageVersion": saved.formVersion, "score": float(saved.score)},
+            "treeCheck": to_tree_check(saved),
+            "evidence": saved, "responses": responses, "incorrect": saved.total - saved.correct,
+            "unanswered": 0, "quality": "complete",
+        }
 
     @router.post("/{event_id}/complete")
     def complete_assessment(event_id: Identifier, submission: Submission):
         with lock:
             attempt = attempts.get(event_id)
             if attempt is None:
-                raise HTTPException(404, "Attempt not found. The demo server may have restarted.")
+                stored = store.stored_submission(event_id)
+                if stored is None or stored[0].skill != "comprehension":
+                    raise HTTPException(404, "Attempt not found. The demo server may have restarted.")
+                saved, original = stored
+                if saved.submissionStatus != "complete":
+                    raise HTTPException(409, "This assessment was interrupted. Start a new check.")
+                responses = original["responses"]
+                expected = sorted((item["questionId"], item["answerId"]) for item in responses)
+                submitted = sorted((item.questionId, item.answerId) for item in submission.responses)
+                assisted = original["start"]["mode"] == "assisted" or submission.assisted
+                if expected != submitted or saved.assisted != assisted:
+                    raise HTTPException(409, "This assessment already has a different submission.")
+                return build_receipt(saved, responses)
             if attempt.interrupted:
                 raise HTTPException(409, "This assessment was interrupted. Start a new check.")
             start = attempt.start
@@ -204,10 +226,11 @@ def create_router():
             try:
                 responses = score_responses(form, submission.responses)
             except ValueError as exc:
+                store.reject(start.learnerId, event_id, submission.model_dump(mode="json"), str(exc))
                 raise HTTPException(422, str(exc)) from exc
             assisted = start.mode == "assisted" or submission.assisted
             if attempt.receipt is not None:
-                if attempt.receipt["responses"] != responses or attempt.receipt["event"].assisted != assisted:
+                if attempt.receipt["responses"] != responses or attempt.receipt["event"]["assisted"] != assisted:
                     raise HTTPException(409, "This assessment already has a different submission.")
                 return attempt.receipt
 
@@ -217,17 +240,15 @@ def create_router():
 
             correct = sum(response["correct"] for response in responses)
             total = len(form.questions)
-            event = Event(
-                eventId=event_id, learnerId=start.learnerId, sessionId=start.sessionId,
-                formId=form.formId, passageId=form.passageId, passageVersion=form.version,
+            event = AssessmentEvent(
+                eventId=event_id, learnerId=start.learnerId, sessionId=start.sessionId, skill="comprehension",
+                formId=form.formId, passageId=form.passageId, formVersion=form.version,
                 difficultyTier=form.difficultyTier, correct=correct, total=total,
-                score=100 * correct / total, assisted=assisted, timestamp=datetime.now(UTC),
+                assisted=assisted, usable=True, timestamp=datetime.now(UTC),
             )
-            receipt = {
-                "event": event, "treeCheck": to_tree_check(event),
-                "responses": responses, "incorrect": total - correct,
-                "unanswered": 0, "quality": "complete",
-            }
+            original = {"start": start.model_dump(mode="json"), "responses": responses, "assisted": assisted}
+            saved = save_verified(store, event, original)
+            receipt = build_receipt(saved, responses)
             attempt.receipt = receipt
             completed_sessions.add(session_key)
             return receipt

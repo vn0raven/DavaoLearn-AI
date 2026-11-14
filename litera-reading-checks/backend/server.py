@@ -1,4 +1,5 @@
 import logging
+import os
 from pathlib import Path
 
 import av
@@ -11,7 +12,9 @@ from pydantic import ValidationError
 
 from . import speech
 from .comprehension import create_router as comprehension_router
-from .scoring import Conflict, DemoReceiver, Submission, compare, load_forms
+from .evidence_api import create_router as evidence_router
+from .evidence_api import open_store, save_verified, verified_event
+from .scoring import Submission, compare, load_forms, score_probe, to_tree_check
 
 LOG = logging.getLogger(__name__)
 FRONTEND = Path(__file__).resolve().parents[1] / "frontend" / "dist"
@@ -39,11 +42,13 @@ def read_clip(clip, max_bytes, max_seconds):
         message = None
     return transcript, message
 
-def create_app():
+def create_app(evidence_path=None, evidence_config=None):
+    path = evidence_path or os.getenv("LITERA_EVIDENCE_DB") or FRONTEND.parents[1] / "data" / "evidence.sqlite3"
+    store = open_store(path, evidence_config or os.getenv("LITERA_EVIDENCE_CONFIG"))
     app = FastAPI(title="BasaBridge Phonics")
     forms = load_forms()
-    receiver = DemoReceiver()
-    app.include_router(comprehension_router())
+    app.include_router(evidence_router(store))
+    app.include_router(comprehension_router(store))
 
     @app.get("/api/forms")
     def list_forms():
@@ -78,14 +83,19 @@ def create_app():
     @app.post("/api/phonics/complete")
     def complete(submission: Submission):
         form = forms.get(submission.formId)
+        source = submission.model_dump(mode="json")
+        source["judgments"].sort(key=lambda item: item["itemId"])
         if not form:
+            store.reject(submission.learnerId, submission.eventId, source, "Unknown phonics form.")
             raise HTTPException(404, "Unknown phonics form.")
         try:
-            return receiver.submit(form, submission)
-        except Conflict as exc:
-            raise HTTPException(409, str(exc)) from exc
+            checked = score_probe(form, submission, (store.rules.reviewLow, store.rules.reviewHigh))
         except (ValueError, ValidationError) as exc:
+            store.reject(submission.learnerId, submission.eventId, source, str(exc))
             raise HTTPException(422, str(exc)) from exc
+        saved = save_verified(store, verified_event(checked, form.version), source)
+        event = {**checked.model_dump(), "timestamp": saved.model_dump(mode="json")["timestamp"], "formVersion": saved.formVersion}
+        return {"event": event, "evidence": saved, "treeCheck": to_tree_check(saved)}
 
     if FRONTEND.is_dir():
         app.mount("/assets", StaticFiles(directory=FRONTEND / "assets"), name="assets")

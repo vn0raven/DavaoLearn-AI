@@ -1,3 +1,5 @@
+import type { AssessmentEvent } from "../evidence";
+
 export interface FormSummary {
   formId: string;
   passageId: string;
@@ -58,6 +60,7 @@ export type TreeCheck = Pick<ComprehensionEvent, "skill" | "kind" | "correct" | 
 
 export interface Receipt {
   event: ComprehensionEvent;
+  evidence: AssessmentEvent;
   treeCheck: TreeCheck;
   responses: (LearnerResponse & { correct: boolean })[];
   incorrect: number;

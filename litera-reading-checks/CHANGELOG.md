@@ -1,5 +1,12 @@
 # Changelog
 
+## Phase 4 — Unified scoring and evidence
+
+- Added persistent assessment history, review-band classification, reassessment confirmation, and separately stored teacher overrides.
+- Connected server-checked phonics, oral reading, and comprehension results to the shared evidence store.
+- Exposed skill states and audit history to the existing decision tree while keeping legacy plan input compatible.
+- Added tests for evidence quality, form freshness, concurrent deduplication, persistence, and all three adapters.
+
 ## Phase 3 — Reading comprehension
 
 - Added two Grade 3 English demonstration forms with five literal questions each.

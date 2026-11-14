@@ -8,9 +8,9 @@ from threading import Lock
 import uvicorn
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
-from voice.tree import Check, recommend
+from voice.tree import Check, Evidence, Skill, recommend
 
 LOG = logging.getLogger(__name__)
 MAX_BYTES = 2 * 1024 * 1024
@@ -23,10 +23,19 @@ class Override(BaseModel):
     reason: str = Field(min_length=1, max_length=240)
 
 class PlanInput(BaseModel):
-    checks: list[Check] = Field(max_length=120)
+    checks: list[Check] | None = Field(default=None, max_length=120)
+    evidence: dict[Skill, Evidence] | None = None
     tier: str = Field(default="demo", min_length=1, max_length=64)
     print_accessible: bool = True
     override: Override | None = None
+
+    @model_validator(mode="after")
+    def validate_plan_source(self):
+        if (self.checks is None) == (self.evidence is None):
+            raise ValueError("Supply either legacy checks or unified evidence.")
+        if self.evidence is not None and set(self.evidence) != set(Skill):
+            raise ValueError("Unified evidence must include all three skills.")
+        return self
 
 @lru_cache(maxsize=1)
 def voice_model():
@@ -56,7 +65,8 @@ def health():
 
 @app.post("/api/plan")
 def plan(request: PlanInput):
-    return recommend(request.checks, request.tier, request.print_accessible, request.override)
+    return recommend(request.checks, request.tier, request.print_accessible, request.override,
+                     evidence=request.evidence)
 
 @app.post("/api/transcribe")
 def transcribe(clip: UploadFile = File(...)):

@@ -4,6 +4,8 @@ import { PhonicsAssessment } from "./PhonicsAssessment";
 import { ComprehensionAssessment } from "./comprehension/ComprehensionAssessment";
 import { OralReadingAssessment } from "./oral/OralReadingAssessment";
 import { toTreeCheck } from "./oral/scoring";
+import { getEvidence, recordOral } from "./evidence";
+import type { EvidenceProfile } from "./evidence";
 import { addEvidence, buildHandoff } from "./session";
 import type { ReadingEvidence } from "./session";
 import "./oral/style.css";
@@ -19,10 +21,12 @@ function App() {
   const ledger = useRef<ReadingEvidence[]>([]);
   const currentSession = useRef<string | undefined>(undefined);
   const [status, setStatus] = useState("");
+  const [profile, setProfile] = useState<EvidenceProfile>();
   function accept(entry: ReadingEvidence) {
     if (!identity || currentSession.current !== identity.sessionId) return;
     ledger.current = addEvidence(identity, ledger.current, entry);
     setEntries(ledger.current);
+    setProfile(undefined);
     setStatus("Evidence added to this session.");
   }
   const data = identity ? buildHandoff(identity, entries) : null;
@@ -41,11 +45,12 @@ function App() {
               }
             }}>{labels[type]}</button>)}
           <button className="button" type="button" onClick={() => {
-            if (!window.confirm("End this session and clear its local evidence and audio? Export any results first.")) return;
+            if (!window.confirm("End this session and clear its preview and audio? Saved evidence stays in the backend.")) return;
             currentSession.current = undefined;
             setIdentity(undefined);
             ledger.current = [];
             setEntries([]);
+            setProfile(undefined);
             setStatus("");
           }}>End session</button>
         </nav>
@@ -67,7 +72,11 @@ function App() {
           const seen = oralExposure.current.get(identity.learnerId) ?? new Set<string>();
           seen.add(passageId);
           oralExposure.current.set(identity.learnerId, seen);
-        }} onComplete={result => accept({ skill: "oral", event: result.event, check: toTreeCheck(result.event) })} />
+        }} onComplete={async result => {
+          const saved = await recordOral(result);
+          const event = { ...result.event, timestamp: saved.event.timestamp };
+          accept({ skill: "oral", event, check: toTreeCheck(event) });
+        }} />
       : <ComprehensionAssessment identity={identity} seenPassages={oralExposure.current.get(identity.learnerId) ?? new Set()}
           onComplete={receipt => accept({ skill: "comprehension", event: receipt.event, check: receipt.treeCheck })} />)}
     {data && <section className="panel mx-auto mb-8 max-w-3xl">
@@ -76,12 +85,27 @@ function App() {
         {labels[entry.skill]} · {entry.event.correct}/{entry.event.total}
         {entry.event.assisted ? " · practice only" : " · independent"}
       </li>)}</ul> : <p>Complete a check to add evidence.</p>}
-      <details className="mt-3"><summary className="cursor-pointer font-semibold">Scoring handoff JSON</summary>
+      <details className="mt-3"><summary className="cursor-pointer font-semibold">Current session JSON (raw checks)</summary>
         <button className="button mt-2" onClick={async () => {
           try { await navigator.clipboard.writeText(JSON.stringify(data, null, 2)); setStatus("Copied."); }
           catch { setStatus("Select the JSON below to copy it."); }
         }}>Copy session JSON</button>
         <pre className="mt-2 max-h-80 overflow-auto rounded-lg bg-slate-100 p-3 text-sm">{JSON.stringify(data, null, 2)}</pre>
+      </details>
+      <details className="mt-3">
+        <summary className="cursor-pointer font-semibold">Saved evidence and decision-tree input</summary>
+        <button type="button" className="button mt-2" onClick={async () => {
+          const session = data.sessionId;
+          try {
+            const saved = await getEvidence(data.learnerId);
+            if (currentSession.current === session) setProfile(saved);
+          } catch {
+            if (currentSession.current === session) setStatus("Could not load saved evidence. Try again.");
+          }
+        }}>Load saved evidence</button>
+        {profile && <pre className="mt-2 max-h-80 overflow-auto rounded-lg bg-slate-100 p-3 text-sm">
+          {JSON.stringify(profile, null, 2)}
+        </pre>}
       </details>
       <p role="status">{status}</p>
     </section>}

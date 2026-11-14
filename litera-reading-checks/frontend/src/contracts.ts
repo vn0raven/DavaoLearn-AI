@@ -1,3 +1,5 @@
+import type { AssessmentEvent } from "./evidence";
+
 export interface Target { itemId: string; word: string }
 export interface Form {
   formId: string;
@@ -37,13 +39,15 @@ export interface PhonicsEvidence {
   correct: number;
   total: 5;
   score: number;
-  assisted: false;
+  assisted: boolean;
   usable: true;
   reviewRequired: boolean;
+  timestamp?: string;
+  formVersion?: string;
 }
 export type TreeCheck = Pick<PhonicsEvidence, "skill" | "kind" | "correct" | "total" | "assisted" | "usable"> & {
   form: string;
   session: string;
   tier: string;
 };
-export interface Receipt { event: PhonicsEvidence; treeCheck: TreeCheck }
+export interface Receipt { event: PhonicsEvidence; evidence: AssessmentEvent; treeCheck: TreeCheck }

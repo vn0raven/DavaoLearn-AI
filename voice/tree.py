@@ -79,13 +79,14 @@ def skill_evidence(checks):
             evidence.note = "Independent success observed on this probe."
     return evidence
 
-def recommend(checks, tier="demo", print_accessible=True, override=None):
-    evidence = {
-        skill: skill_evidence(
-            c for c in checks if c.skill == skill and c.tier == tier
-        )
-        for skill in Skill
-    }
+def recommend(checks, tier="demo", print_accessible=True, override=None, *, evidence=None):
+    if evidence is None:
+        evidence = {
+            skill: skill_evidence(
+                c for c in checks if c.skill == skill and c.tier == tier
+            )
+            for skill in Skill
+        }
     raw_below = [s for s in Skill if evidence[s].raw_below]
     gaps = [s for s in Skill if evidence[s].status == "support"]
     pending = [s for s in Skill if evidence[s].recheck]

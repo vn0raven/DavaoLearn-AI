@@ -1,7 +1,6 @@
-import json
 import re
+from fractions import Fraction
 from pathlib import Path
-from threading import Lock
 from typing import Annotated, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
@@ -13,6 +12,12 @@ Verdict = Literal["CORRECT", "INCORRECT", "UNCLEAR"]
 class Model(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+def calculate_score(correct: int, total: int) -> Fraction:
+    if type(correct) is not int or type(total) is not int or not 0 <= correct <= total or total < 1:
+        raise ValueError("Counts must be integers with 0 <= correct <= total and total > 0.")
+    return Fraction(100 * correct, total)
+
+
 class Target(Model):
     itemId: Identifier
     word: str = Field(pattern=r"^[a-z]{1,32}$")
@@ -21,6 +26,7 @@ class Form(Model):
     formId: Identifier
     difficultyTier: Identifier
     pattern: str = Field(min_length=1, max_length=32)
+    version: str = Field(default="1.0.0", min_length=1, max_length=64)
     items: list[Target] = Field(min_length=5, max_length=5)
 
     @model_validator(mode="after")
@@ -65,7 +71,7 @@ class PhonicsEvidence(Model):
     correct: int = Field(ge=0, le=5)
     total: Literal[5] = 5
     score: int = Field(ge=0, le=100)
-    assisted: Literal[False] = False
+    assisted: bool = False
     usable: Literal[True] = True
     reviewRequired: bool
 
@@ -73,8 +79,6 @@ class PhonicsEvidence(Model):
     def validate_derived_fields(self):
         if self.score != 100 * self.correct // self.total:
             raise ValueError("Score must match the teacher-confirmed count.")
-        if self.reviewRequired != (REVIEW_BAND[0] <= self.score <= REVIEW_BAND[1]):
-            raise ValueError("Review flag must match the configured band.")
         return self
 
 def compare(expected, transcript):
@@ -85,7 +89,8 @@ def compare(expected, transcript):
         return "review"
     return "match" if words[0] == expected else "possible_mismatch"
 
-def score_probe(form, submission):
+def score_probe(form, submission, review_band=REVIEW_BAND):
+
     if form.formId != submission.formId:
         raise ValueError("Submission targets the wrong form.")
     judgments = submission.judgments
@@ -94,14 +99,16 @@ def score_probe(form, submission):
         raise ValueError("Submit exactly one final judgment for each of the five targets.")
     if len({j.attemptId for j in judgments}) != len(items):
         raise ValueError("Do not reuse one attempt for multiple targets.")
-    if any(j.verdict == "UNCLEAR" or j.assisted for j in judgments):
-        raise ValueError("All five judgments must be clear and independent.")
+    if any(j.verdict == "UNCLEAR" for j in judgments):
+        raise ValueError("All five judgments must be clear.")
     correct = sum(j.verdict == "CORRECT" for j in judgments)
-    score = 100 * correct // len(items)
+    score = int(calculate_score(correct, len(items)))
+    assisted = any(j.assisted for j in judgments)
     return PhonicsEvidence(
         eventId=submission.eventId, learnerId=submission.learnerId, formId=form.formId,
         sessionId=submission.sessionId, difficultyTier=form.difficultyTier,
-        correct=correct, score=score, reviewRequired=REVIEW_BAND[0] <= score <= REVIEW_BAND[1],
+        correct=correct, score=score, assisted=assisted,
+        reviewRequired=not assisted and review_band[0] <= score <= review_band[1],
     )
 
 class TreeEvidence(Protocol):
@@ -135,33 +142,3 @@ def to_tree_check(event: TreeEvidence):
 
 class Conflict(ValueError):
     pass
-
-class DemoReceiver:
-    """In-memory receipt ledger for a single local demo process."""
-    def __init__(self):
-        self.receipts = {}
-        self.forms_used = set()
-        self.sessions_used = set()
-        self.lock = Lock()
-
-    def submit(self, form, submission):
-        event = score_probe(form, submission)
-        # Sort by item so retrying the same data in a different order is idempotent.
-        payload = submission.model_dump()
-        payload["judgments"].sort(key=lambda item: item["itemId"])
-        fingerprint = json.dumps(payload, sort_keys=True)
-        form_key = (event.learnerId, event.formId)
-        session_key = (event.learnerId, event.difficultyTier, event.sessionId)
-        with self.lock:
-            if event.eventId in self.receipts:
-                prior, receipt = self.receipts[event.eventId]
-                if prior != fingerprint:
-                    raise Conflict("This event ID has already been used with a different submission.")
-                return receipt
-            if form_key in self.forms_used or session_key in self.sessions_used:
-                raise Conflict("Use a fresh form and a separate session for this learner and tier.")
-            receipt = {"event": event, "treeCheck": to_tree_check(event)}
-            self.receipts[event.eventId] = (fingerprint, receipt)
-            self.forms_used.add(form_key)
-            self.sessions_used.add(session_key)
-            return receipt

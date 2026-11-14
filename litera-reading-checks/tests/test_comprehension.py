@@ -1,4 +1,5 @@
 import os
+from tempfile import TemporaryDirectory
 import sys
 import unittest
 from pathlib import Path
@@ -31,7 +32,9 @@ def choices(form_id="COMP-A", num_correct=5):
 
 class ComprehensionTests(unittest.TestCase):
     def setUp(self):
-        self.client = TestClient(create_app())
+        temp = TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        self.client = TestClient(create_app(Path(temp.name) / "evidence.sqlite3"))
         self.addCleanup(self.client.close)
 
     def start(self, form="COMP-A", learner="demo-001", session="session-1", mode="independent", event_id=None):
