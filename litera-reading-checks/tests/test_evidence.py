@@ -273,6 +273,54 @@ class AdapterTests(unittest.TestCase):
             })
             self.assertEqual(retry.json(), result.json())
 
+    def test_planner_follows_validated_progression_and_preserves_other_gaps(self):
+        approval_data = [item.model_dump(mode="json") for item in approvals()]
+        config = self.db.with_name("demo-approvals.json")
+        config.write_text(json.dumps({"comparableForms": approval_data}), encoding="utf-8")
+        store = EvidenceStore(self.db, approvals=approvals())
+        for event in [evidence(), evidence(2, 7, 10, Skill.ORAL), evidence(3, 3, 5, Skill.COMPREHENSION)]:
+            store.ingest(event)
+        with TestClient(create_app(self.db, config)) as api:
+            def plan():
+                response = api.get(f"/api/evidence/learners/{LEARNER}")
+                self.assertEqual(response.status_code, 200, response.text)
+                return response.json()["recommendation"]
+
+            self.assertEqual(plan()["primary"]["skill"], "phonics")
+            store.ingest(evidence(4, 4))
+            self.assertEqual(plan()["primary"]["skill"], "phonics")
+            self.assertIn("phonics", plan()["pendingRechecks"])
+            store.ingest(evidence(5, 4))
+            updated = plan()
+            self.assertEqual(updated["primary"]["activityId"], "GUIDED_ORAL_READING")
+            self.assertEqual(updated["secondary"]["activityId"], "SUPPORTED_COMPREHENSION")
+            self.assertEqual(updated["activeGaps"], ["oral", "comprehension"])
+            self.assertEqual(updated["skillEvidence"]["phonics"]["latestUsableEventId"], "check-5")
+
+    def test_structured_override_persists_and_stays_session_scoped(self):
+        self.api.post("/api/phonics/complete", json=self.phonics()).raise_for_status()
+        baseline = self.profile()["recommendation"]
+        override = {
+            "overrideId": "override-5", "learnerId": LEARNER, "sessionId": "s-5",
+            "why": "Teacher selected a shorter passage.", "timestamp": "2026-01-01T00:00:00Z",
+            "primaryActivityId": "GUIDED_ORAL_READING", "secondaryActivityId": "ROTATING_REVIEW",
+            "primaryDifficultyTier": "shorter-text",
+        }
+        invalid = {**override, "secondaryActivityId": "UNKNOWN"}
+        self.assertEqual(self.api.post("/api/evidence/overrides", json=invalid).status_code, 422)
+        self.api.post("/api/evidence/overrides", json=override).raise_for_status()
+        self.assertEqual(self.profile()["recommendation"], baseline)
+        with TestClient(create_app(self.db)) as client:
+            response = client.get(f"/api/evidence/learners/{LEARNER}", params={"overrideSession": "s-5"})
+            self.assertEqual(response.status_code, 200, response.text)
+            updated = response.json()["recommendation"]
+        self.assertEqual(updated["primary"]["difficultyTier"], "shorter-text")
+        self.assertEqual(updated["secondary"]["activityId"], "ROTATING_REVIEW")
+        self.assertEqual(updated["algorithmicPlan"], baseline["algorithmicPlan"])
+        self.assertEqual(updated["skillEvidence"], baseline["skillEvidence"])
+        self.assertEqual(updated["activeGaps"], baseline["activeGaps"])
+        self.assertEqual(updated["teacherOverride"]["overrideId"], "override-5")
+
     def test_teacher_override_preserves_evidence_and_reaches_existing_tree(self):
         self.api.post("/api/phonics/complete", json=self.phonics()).raise_for_status()
         baseline = self.profile()

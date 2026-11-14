@@ -1,5 +1,11 @@
 # Changelog
 
+## Phase 5 — Adaptive decision tree
+
+- Added eight confirmed-state routes, accessible practice when evidence is uncertain, and explainable support and reassessment queues.
+- Connected Litera’s saved evidence to the shared Python planner and displayed the two recommended activities in the existing session view.
+- Extended stored teacher overrides to primary and secondary activities and optional difficulty tiers.
+
 ## Phase 4 — Unified scoring and evidence
 
 - Added persistent assessment history, review-band classification, reassessment confirmation, and separately stored teacher overrides.

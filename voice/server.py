@@ -10,7 +10,7 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, model_validator
 
-from voice.tree import Check, Evidence, Skill, recommend
+from voice.tree import Check, Evidence, PlanOverride, Skill, recommend
 
 LOG = logging.getLogger(__name__)
 MAX_BYTES = 2 * 1024 * 1024
@@ -18,16 +18,16 @@ STATIC = Path(__file__).with_name("static")
 VOICE_LOCK = Lock()
 app = FastAPI(title="BasaBridge English Voice Tester")
 
-class Override(BaseModel):
-    activity: str = Field(min_length=1, max_length=240)
-    reason: str = Field(min_length=1, max_length=240)
-
 class PlanInput(BaseModel):
     checks: list[Check] | None = Field(default=None, max_length=120)
     evidence: dict[Skill, Evidence] | None = None
     tier: str = Field(default="demo", min_length=1, max_length=64)
     print_accessible: bool = True
-    override: Override | None = None
+    override: PlanOverride | None = None
+    learnerId: str | None = Field(default=None, pattern=r"^[A-Za-z0-9_-]{1,64}$")
+    selectedTiers: dict[Skill, str] | None = None
+    evidenceRefs: dict[Skill, str | None] | None = None
+    support_stalled: bool = False
 
     @model_validator(mode="after")
     def validate_plan_source(self):
@@ -66,7 +66,8 @@ def health():
 @app.post("/api/plan")
 def plan(request: PlanInput):
     return recommend(request.checks, request.tier, request.print_accessible, request.override,
-                     evidence=request.evidence)
+                     evidence=request.evidence, learner_id=request.learnerId, tiers=request.selectedTiers,
+                     evidence_refs=request.evidenceRefs, support_stalled=request.support_stalled)
 
 @app.post("/api/transcribe")
 def transcribe(clip: UploadFile = File(...)):

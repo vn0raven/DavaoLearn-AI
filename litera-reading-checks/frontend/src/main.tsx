@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { PhonicsAssessment } from "./PhonicsAssessment";
 import { ComprehensionAssessment } from "./comprehension/ComprehensionAssessment";
@@ -22,6 +22,22 @@ function App() {
   const currentSession = useRef<string | undefined>(undefined);
   const [status, setStatus] = useState("");
   const [profile, setProfile] = useState<EvidenceProfile>();
+  const [printAccessible, setPrintAccessible] = useState(true);
+  const [planError, setPlanError] = useState(false);
+  const [refreshPlan, setRefreshPlan] = useState(0);
+
+  useEffect(() => {
+    if (!identity) return;
+    const controller = new AbortController();
+    setProfile(undefined);
+    setPlanError(false);
+    getEvidence(identity.learnerId, identity.sessionId, printAccessible, controller.signal).then(result => {
+      if (!controller.signal.aborted) setProfile(result);
+    }).catch(() => {
+      if (!controller.signal.aborted) setPlanError(true);
+    });
+    return () => controller.abort();
+  }, [identity, entries, printAccessible, refreshPlan]);
   function accept(entry: ReadingEvidence) {
     if (!identity || currentSession.current !== identity.sessionId) return;
     ledger.current = addEvidence(identity, ledger.current, entry);
@@ -57,6 +73,7 @@ function App() {
       </> : <form className="panel mt-4" onSubmit={event => {
         event.preventDefault();
         setCheck("phonics");
+        setPrintAccessible(true);
         const sessionId = crypto.randomUUID();
         currentSession.current = sessionId;
         setIdentity({ learnerId, sessionId });
@@ -92,17 +109,24 @@ function App() {
         }}>Copy session JSON</button>
         <pre className="mt-2 max-h-80 overflow-auto rounded-lg bg-slate-100 p-3 text-sm">{JSON.stringify(data, null, 2)}</pre>
       </details>
+      <div className="mt-5 border-t border-slate-200 pt-4">
+        <h3 className="font-bold">Recommended next steps</h3>
+        <label className="mt-2 flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={printAccessible} onChange={event => setPrintAccessible(event.target.checked)} />
+          Learner can access the current printed text
+        </label>
+        {planError ? <p className="mt-2" role="alert">Could not load the recommendation.</p>
+          : !profile ? <p className="mt-2" role="status">Loading recommendation…</p>
+          : <div className="mt-2 grid gap-2 text-sm" aria-live="polite">
+              <p><strong>Primary:</strong> {profile.recommendation.primary.label}</p>
+              <p><strong>Secondary:</strong> {profile.recommendation.secondary.label}</p>
+              <p>{profile.recommendation.explanation}</p>
+              {profile.recommendation.teacherReviewRequired && <p>Teacher review requested.</p>}
+            </div>}
+      </div>
       <details className="mt-3">
         <summary className="cursor-pointer font-semibold">Saved evidence and decision-tree input</summary>
-        <button type="button" className="button mt-2" onClick={async () => {
-          const session = data.sessionId;
-          try {
-            const saved = await getEvidence(data.learnerId);
-            if (currentSession.current === session) setProfile(saved);
-          } catch {
-            if (currentSession.current === session) setStatus("Could not load saved evidence. Try again.");
-          }
-        }}>Load saved evidence</button>
+        <button type="button" className="button mt-2" onClick={() => setRefreshPlan(value => value + 1)}>Load saved evidence</button>
         {profile && <pre className="mt-2 max-h-80 overflow-auto rounded-lg bg-slate-100 p-3 text-sm">
           {JSON.stringify(profile, null, 2)}
         </pre>}

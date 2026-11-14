@@ -94,9 +94,22 @@ class Override(Model):
     sessionId: Identifier
     skill: Skill | None = None
     why: str = Field(min_length=1, max_length=240, pattern=r"\S")
-    selectedRecommendation: str = Field(min_length=1, max_length=240, pattern=r"\S")
+    selectedRecommendation: str | None = Field(default=None, min_length=1, max_length=240, pattern=r"\S")
     previousRecommendation: str | None = Field(default=None, max_length=240)
+    primaryActivityId: Identifier | None = None
+    secondaryActivityId: Identifier | None = None
+    primaryDifficultyTier: Identifier | None = None
+    secondaryDifficultyTier: Identifier | None = None
     timestamp: AwareDatetime
+
+    def plan_input(self):
+        metadata = self.model_dump(include={
+            "primaryActivityId", "secondaryActivityId", "primaryDifficultyTier",
+            "secondaryDifficultyTier", "overrideId", "sessionId",
+        }, exclude_none=True)
+        if self.selectedRecommendation:
+            metadata["activity"] = self.selectedRecommendation
+        return {**metadata, "reason": self.why}
 
 
 def empty_state():

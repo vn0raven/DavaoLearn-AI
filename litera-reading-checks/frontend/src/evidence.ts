@@ -36,6 +36,22 @@ export interface SkillState {
   confirmationEventIds: string[];
 }
 
+interface RecommendedActivity {
+  activityId: string;
+  label: string;
+  purpose: string;
+  difficultyTier: string | null;
+}
+
+export interface Recommendation {
+  primary: RecommendedActivity;
+  secondary: RecommendedActivity;
+  pendingRechecks: AssessmentEvent["skill"][];
+  queuedGaps: AssessmentEvent["skill"][];
+  teacherReviewRequired: boolean;
+  explanation: string;
+}
+
 export interface EvidenceProfile {
   learnerId: string;
   skills: SkillState[];
@@ -44,6 +60,7 @@ export interface EvidenceProfile {
   missingEvidence: AssessmentEvent["skill"][];
   reassessmentQueue: AssessmentEvent["skill"][];
   events: AssessmentEvent[];
+  recommendation: Recommendation;
   planInput: {
     evidence: Record<AssessmentEvent["skill"], {
       status: Lowercase<Status>;
@@ -52,12 +69,19 @@ export interface EvidenceProfile {
       recheck: boolean;
       note: string;
     }>;
-    override?: { activity: string; reason: string };
+    learnerId: string;
+    selectedTiers: Record<AssessmentEvent["skill"], string>;
+    evidenceRefs: Record<AssessmentEvent["skill"], string | null>;
+    print_accessible: boolean;
+    support_stalled: boolean;
+    override?: { reason: string; activity?: string; primaryActivityId?: string; secondaryActivityId?: string;
+      primaryDifficultyTier?: string; secondaryDifficultyTier?: string; overrideId?: string; sessionId?: string };
   };
 }
 
-export function getEvidence(learnerId: string, signal?: AbortSignal) {
-  return request<EvidenceProfile>(`/api/evidence/learners/${encodeURIComponent(learnerId)}`, { signal });
+export function getEvidence(learnerId: string, sessionId: string, printAccessible: boolean, signal: AbortSignal) {
+  const query = new URLSearchParams({ overrideSession: sessionId, printAccessible: String(printAccessible) });
+  return request<EvidenceProfile>(`/api/evidence/learners/${encodeURIComponent(learnerId)}?${query}`, { signal });
 }
 
 export async function recordOral(result: DetailedResult) {

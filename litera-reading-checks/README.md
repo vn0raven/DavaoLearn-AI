@@ -22,7 +22,7 @@ For a port conflict, run `.\.venv\Scripts\python.exe -m uvicorn backend.server:a
 
 ## Evidence and existing tree
 
-Completed results are stored by learner, skill, and tier in local SQLite. Open **Saved evidence and decision-tree input** and choose **Load saved evidence** to inspect the score history, evidence exclusions, and reassessment queue. Pass its `planInput` to the existing voice service's `POST /api/plan` when that service is running. See [EVIDENCE.md](EVIDENCE.md) for setup, data contracts, and verification.
+Completed results are stored by learner, skill, and tier in local SQLite. See **Recommended next steps** under Session evidence for the primary and secondary activities and the reason for each plan. Open **Saved evidence and decision-tree input** for the underlying evidence and queues. See [EVIDENCE.md](EVIDENCE.md) for evidence contracts and [ADAPTIVE-PLAN.md](ADAPTIVE-PLAN.md) for routing, overrides, and Windows verification. Keep the repository's `voice/` and `litera-reading-checks/` directories side by side.
 
 The reading passages are original provisional demonstration materials. For the oral rubric, see `ORAL-READING.md`. For the new assessment API, repeat rules and Windows verification, see `COMPREHENSION.md`.
 

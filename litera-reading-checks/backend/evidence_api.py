@@ -6,10 +6,11 @@ from pathlib import Path
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from .evidence import ApprovedForm, AssessmentEvent, Override, Rules, Skill
 from .evidence_store import EvidenceStore
+from .plan import PlanOverride, plan_from_profile
 from .scoring import Conflict, Identifier, Model, to_tree_check
 
 ORAL_PASSAGES = Path(__file__).resolve().parents[1] / "frontend" / "src" / "oral" / "data" / "passages.json"
@@ -94,13 +95,23 @@ def create_router(store):
         learner_id: Identifier, phonicsTier: Identifier = "CVCC-final-nt",
         oralTier: Identifier = "short-text", comprehensionTier: Identifier = "short-text",
         overrideSession: Identifier | None = None,
+        printAccessible: bool = True, supportStalled: bool = False,
     ):
-        return store.profile(learner_id, {
+        profile = store.profile(learner_id, {
             Skill.PHONICS: phonicsTier, Skill.ORAL: oralTier, Skill.COMPREHENSION: comprehensionTier,
         }, overrideSession)
+        profile["planInput"].update(print_accessible=printAccessible, support_stalled=supportStalled)
+        profile["recommendation"] = plan_from_profile(
+            profile, print_accessible=printAccessible, support_stalled=supportStalled,
+        )
+        return profile
 
     @router.post("/overrides")
     def override(override: Override):
+        try:
+            PlanOverride.model_validate(override.plan_input())
+        except ValidationError as exc:
+            raise HTTPException(422, "Supply supported activity IDs or difficulty tiers and an override reason.") from exc
         try:
             return store.record_override(override)
         except Conflict as exc:

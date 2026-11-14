@@ -32,7 +32,7 @@ The last two rows use synthetic approvals in tests. The shipped phonics pack inc
 - `POST /api/evidence/overrides` requires `overrideId`, `learnerId`, `sessionId`, `why`, `selectedRecommendation`, and an ISO timestamp with a timezone. It also accepts `skill` and `previousRecommendation`. Add `overrideSession` to the profile query to include that session's most recent override in `planInput`.
 - Pass the profile's `planInput` as JSON to the existing voice service's `POST /api/plan`. Its legacy `checks` payload is still supported. The unified input uses already-classified statuses and keeps the original recommendation logic. In the Litera demo, load the profile using **Saved evidence and decision-tree input**. The current session export shows raw checks for inspection.
 
-To run both services locally, start Litera on port 8765, then start the voice service from the repository root on port 8766. Use the selected profile's `planInput` with that endpoint:
+Litera displays its plan directly using the shared Python planner. To test the legacy Voice Lab endpoint as well, start Litera on port 8765, then start the voice service from the repository root on port 8766. Use the selected profile's `planInput` with that endpoint:
 
 ```powershell
 python -m uvicorn voice.server:app --host 127.0.0.1 --port 8766

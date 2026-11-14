@@ -158,21 +158,24 @@ class EvidenceStore:
             scopes.setdefault((event.skill, event.difficultyTier), []).append(event)
         states = []
         tree = {}
+        references = {}
         for (skill, tier), checks in sorted(scopes.items()):
             state, history = project(checks, self.rules, self.approved)
             states.append({"skill": skill, "difficultyTier": tier, **state, "history": history})
             if tier == selected_tiers.get(skill):
+                references[skill] = state["latestUsableEventId"]
                 tree[skill] = {
                     "status": state["status"].lower(), "score": state["latestUsableScore"],
                     "raw_below": state["rawBelowCutoff"] is True, "recheck": state["reassess"],
                     "note": state["reason"],
                 }
         overrides.sort(key=lambda item: (item.timestamp, item.overrideId))
-        plan_input = {"evidence": tree}
+        plan_input = {"evidence": tree, "learnerId": learner,
+                      "selectedTiers": selected_tiers, "evidenceRefs": references}
         matching = [item for item in overrides if item.sessionId == override_session]
         if matching:
             latest = matching[-1]
-            plan_input["override"] = {"activity": latest.selectedRecommendation, "reason": latest.why}
+            plan_input["override"] = latest.plan_input()
         return {
             "learnerId": learner, "rules": self.rules, "selectedTiers": selected_tiers, "skills": states,
             "activeGaps": [skill for skill in Skill if tree[skill]["status"] == "support"],
