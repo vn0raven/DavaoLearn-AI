@@ -12,3 +12,39 @@
   .button[aria-pressed="true"] { @apply border-violet-800 bg-violet-200; }
   .button.primary { @apply border-violet-800 bg-violet-800 text-white; }
 }
+
+/* Phase C: accessible reading controls; preserve existing violet design palette. */
+.basabridge-app { min-height: 100vh; line-height: 1.65; }
+.basabridge-app[data-text-size="large"] { font-size: 1.2rem; }
+.basabridge-app[data-text-size="large"] .phonics-screen { font-size: inherit; }
+.basabridge-app [role="status"] { overflow-wrap: anywhere; }
+.basabridge-app button, .basabridge-app select, .basabridge-app input { min-height: 44px; }
+.basabridge-app :focus-visible { outline: 3px solid #9d4216 !important; outline-offset: 3px; }
+.basabridge-app[data-contrast="high"] { background: #fff !important; color: #111 !important; }
+.basabridge-app[data-contrast="high"] .panel,
+.basabridge-app[data-contrast="high"] .quest-zone,
+.basabridge-app[data-contrast="high"] .phonics-screen section { background: #fff !important; color: #111 !important; border: 2px solid #111 !important; }
+.basabridge-app[data-contrast="high"] .button { color: #111; border: 2px solid #111; }
+.basabridge-app[data-contrast="high"] .button.primary { background: #34115e; color: white; }
+.basabridge-app[data-contrast="high"] .text-slate-700,
+.basabridge-app[data-contrast="high"] .text-slate-600 { color: #222 !important; }
+.basabridge-app[data-focus="on"] .quest-map, .basabridge-app[data-focus="on"] .optional-details { display: none; }
+.quest-map { margin: 1rem 0; border: 1px solid #d8c9ed; border-radius: 1rem; padding: 1rem; background: #faf7ff; }
+.quest-zones { display: grid; gap: .65rem; padding: .7rem 0 0; }
+.quest-zone { display: flex; gap: .75rem; align-items: flex-start; padding: .85rem; border-radius: .75rem; border: 1px solid #cab8e3; background: white; }
+.quest-zone.selected { border: 3px solid #5b21b6; background: #f2eafb; }
+.quest-number { display: grid; place-items: center; background: #5b21b6; color: #fff; border-radius: 50%; width: 2.2rem; height: 2.2rem; flex-shrink: 0; }
+.evidence-table { width: 100%; min-width: 520px; border-collapse: collapse; text-align: left; font-size: .875rem; }
+.evidence-table td, .evidence-table th { padding: .6rem; border-bottom: 1px solid #d8c9ed; vertical-align: top; }
+.evidence-table th { background: #f3e8ff; }
+@media (prefers-reduced-motion: reduce) { .basabridge-app *, .basabridge-app *::before, .basabridge-app *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+@media (max-width: 480px) { .basabridge-app .panel { padding: .8rem; } .evidence-table { font-size: .8rem; } }
+
+.basabridge-app[data-contrast="high"] .phonics-screen,
+.basabridge-app[data-contrast="high"] .phonics-screen .word,
+.basabridge-app[data-contrast="high"] .phonics-screen .signal { background: #fff !important; color: #111 !important; }
+
+.basabridge-app[data-text-size="large"] .text-sm { font-size: 1.05rem !important; }
+.basabridge-app[data-text-size="large"] .text-lg { font-size: 1.4rem !important; }
+.basabridge-app[data-text-size="large"] .text-xl { font-size: 1.65rem !important; }
+.basabridge-app[data-text-size="large"] .text-2xl { font-size: 2rem !important; }

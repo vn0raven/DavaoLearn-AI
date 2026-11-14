@@ -1,5 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { FormEvent } from "react";
+import { RequestError } from "../api";
+import { recordExposure } from "../practice/fresh";
 import { alignReading, reviewSuggestions } from "./alignment";
 import type { Suggestion } from "./alignment";
 import { SessionAudio } from "./SessionAudio";
@@ -34,16 +36,19 @@ function newId(): string {
 interface Props {
   passagePack?: Passage[];
   learnerId?: string;
+  freshFormId?: string;
   sharedSession?: { learnerId: string; sessionId: string };
   onPassageOpened?: (passageId: string) => void;
   onComplete?: (result: DetailedResult) => void | Promise<void>;
 }
 
-export function OralReadingAssessment({passagePack = passages, learnerId: initialLearner = "demo-001", sharedSession, onPassageOpened, onComplete}: Props) {
+export function OralReadingAssessment({passagePack = passages, learnerId: initialLearner = "demo-001", sharedSession, freshFormId, onPassageOpened, onComplete}: Props) {
   validatePassages(passagePack);
   const [learnerId, setLearnerId] = useState(initialLearner);
   const [sessionId, setSessionId] = useState(newId);
-  const [selected, setSelected] = useState(passagePack[0].passageId);
+  const available = passagePack.filter(item => !freshFormId || item.formId === freshFormId);
+  const [selected, setSelected] = useState(available[0]?.passageId ?? "");
+  const [opening, setOpening] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [result, setResult] = useState<DetailedResult | null>(null);
   const [notice, setNotice] = useState("");
@@ -58,10 +63,21 @@ export function OralReadingAssessment({passagePack = passages, learnerId: initia
 
   useEffect(() => { if (result) summary.current?.focus(); else if (session?.eventId) title.current?.focus(); }, [result, session?.eventId]);
 
-  function start(event: FormEvent<HTMLFormElement>) {
+  async function start(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const passage = passagePack.find(item => item.passageId === selected);
-    if (!passage) return;
+    const passage = available.find(item => item.passageId === selected);
+    if (!passage || opening) return;
+    if (sharedSession) {
+      setOpening(true);
+      try {
+        await recordExposure(sharedSession.learnerId, passage.formId, Boolean(freshFormId));
+      } catch (error) {
+        setNotice(error instanceof RequestError ? error.message : "Could not register this form. Try again.");
+        return;
+      } finally {
+        setOpening(false);
+      }
+    }
     onPassageOpened?.(passage.passageId);
     setNotice("");
     setTranscript("");
@@ -190,14 +206,14 @@ export function OralReadingAssessment({passagePack = passages, learnerId: initia
       <form onSubmit={start} className="mt-4 grid gap-4">
         <label className="field">Passage
           <select value={selected} onChange={e => setSelected(e.target.value)}>
-            {passagePack.map(p => <option key={p.passageId} value={p.passageId}>{p.title} · {p.wordCount} words</option>)}
+            {available.map(p => <option key={p.passageId} value={p.passageId}>{p.title} · {p.wordCount} words</option>)}
           </select>
         </label>
         {!sharedSession && <>
         <label className="field">Fictional learner ID<input value={learnerId} onChange={e => setLearnerId(e.target.value)} required pattern="[A-Za-z0-9_\-]{1,64}" /></label>
         <label className="field">Session ID<input value={sessionId} onChange={e => setSessionId(e.target.value)} required pattern="[A-Za-z0-9_\-]{1,64}" /></label>
         </>}
-        <button className="button primary justify-self-start">Start check</button>
+        <button className="button primary justify-self-start" disabled={!available.length || opening}>Start check</button>
       </form>
       <p className="mt-4 text-sm text-slate-700">These forms are provisional and have not been validated as equivalent.</p>
     </section>}

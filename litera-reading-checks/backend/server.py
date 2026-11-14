@@ -2,7 +2,6 @@ import logging
 import os
 from pathlib import Path
 
-import av
 import numpy as np
 import uvicorn
 from fastapi import FastAPI, File, Form as MultipartField, HTTPException, UploadFile
@@ -12,8 +11,10 @@ from pydantic import ValidationError
 
 from . import speech
 from .comprehension import create_router as comprehension_router
+from .comprehension import load_forms as comprehension_forms
 from .evidence_api import create_router as evidence_router
 from .evidence_api import open_store, save_verified, verified_event
+from .fresh_checks import create_router as fresh_checks_router
 from .scoring import Submission, compare, load_forms, score_probe, to_tree_check
 
 LOG = logging.getLogger(__name__)
@@ -28,7 +29,7 @@ def read_clip(clip, max_bytes, max_seconds):
         raise HTTPException(422, "Recording is empty. Try again.")
     try:
         samples = speech.decode_audio(data, max_seconds)
-    except (ValueError, av.FFmpegError):
+    except (ValueError, speech.AVDecodeError):
         raise HTTPException(422, "Audio is unsupported, interrupted, or too long. Try recording again.")
     if not np.isfinite(samples).all() or float(np.max(np.abs(samples))) <= 1e-5:
         raise HTTPException(422, "No audible signal detected. Try recording again.")
@@ -48,7 +49,9 @@ def create_app(evidence_path=None, evidence_config=None):
     app = FastAPI(title="BasaBridge Phonics")
     forms = load_forms()
     app.include_router(evidence_router(store))
-    app.include_router(comprehension_router(store))
+    reading_forms = comprehension_forms()
+    app.include_router(fresh_checks_router(store, forms, reading_forms))
+    app.include_router(comprehension_router(store, reading_forms))
 
     @app.get("/api/forms")
     def list_forms():

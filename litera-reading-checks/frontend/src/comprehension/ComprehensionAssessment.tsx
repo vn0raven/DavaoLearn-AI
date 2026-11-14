@@ -7,6 +7,7 @@ import type { ComprehensionForm, FormSummary, LearnerResponse, Mode, Receipt } f
 
 interface Props {
   identity: SessionIdentity;
+  freshFormId?: string;
   seenPassages: ReadonlySet<string>;
   onComplete: (receipt: Receipt) => void;
 }
@@ -15,7 +16,7 @@ function describe(error: unknown, fallback: string) {
   return error instanceof RequestError ? error.message : fallback;
 }
 
-export function ComprehensionAssessment({ identity, seenPassages, onComplete }: Props) {
+export function ComprehensionAssessment({ identity, seenPassages, onComplete, freshFormId }: Props) {
   const [forms, setForms] = useState<FormSummary[]>([]);
   const [loadKey, setLoadKey] = useState(0);
   const [formId, setFormId] = useState("");
@@ -50,13 +51,14 @@ export function ComprehensionAssessment({ identity, seenPassages, onComplete }: 
   useEffect(() => {
     const controller = new AbortController();
     listForms(controller.signal).then(items => {
-      setForms(items);
-      setFormId(items[0]?.formId ?? "");
+      const available = items.filter(item => !freshFormId || item.formId === freshFormId);
+      setForms(available);
+      setFormId(available[0]?.formId ?? "");
     }).catch(error => {
       if (!controller.signal.aborted) setError(describe(error, "Could not load comprehension forms."));
     });
     return () => controller.abort();
-  }, [loadKey]);
+  }, [loadKey, freshFormId]);
   useEffect(() => { if (attempt || receipt) heading.current?.focus(); }, [attempt, index, receipt]);
 
   async function start() {
@@ -65,6 +67,7 @@ export function ComprehensionAssessment({ identity, seenPassages, onComplete }: 
     const previous = starting.current;
     const data = previous?.formId === formId && previous.mode === mode ? previous : {
       ...identity, eventId: crypto.randomUUID(), formId, mode, difficultyTier: form.difficultyTier,
+      requireFresh: Boolean(freshFormId),
     };
     starting.current = data;
     sending.current = true;
@@ -181,7 +184,7 @@ export function ComprehensionAssessment({ identity, seenPassages, onComplete }: 
         </select>
       </label>
       <label className="field mt-3">Assessment mode
-        <select value={mode} disabled={busy} onChange={event => setMode(event.target.value === "assisted" ? "assisted" : "independent")}>
+        <select value={mode} disabled={busy || Boolean(freshFormId)} onChange={event => setMode(event.target.value === "assisted" ? "assisted" : "independent")}>
           <option value="independent">Independent reading</option>
           <option value="assisted">Assisted practice</option>
         </select>

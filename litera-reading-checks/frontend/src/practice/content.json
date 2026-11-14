@@ -1,0 +1,347 @@
+[
+  {
+    "id": "practice-nt-blend-v1",
+    "skill": "phonics",
+    "type": "word-blending",
+    "categories": [
+      "PHONICS_BASED_LEARNING"
+    ],
+    "difficultyTier": "CVCC-final-nt",
+    "competencies": [
+      "EN3PWS-I-2"
+    ],
+    "title": "Blend words that end in nt",
+    "instructions": "Say the sounds, blend them, and choose the word you read.",
+    "version": "1",
+    "source": "Original Litera demonstration material",
+    "license": "Project-authored demo material",
+    "intendedUse": "practice",
+    "assistance": "teacher-guided",
+    "steps": [
+      {
+        "kind": "guide",
+        "prompt": "Teacher model",
+        "cue": "Point to the n and t in hunt. Say the /n/ sound, then the /t/ sound without adding an extra vowel. Say hunt slowly, then blend it in one smooth read.",
+        "action": "Practice the model",
+        "hints": [
+          "Look at the words or sounds that need another try.",
+          "Ask your teacher to model the difficult part slowly.",
+          "Point to the n and t in hunt. Say the /n/ sound, then the /t/ sound without adding an extra vowel. Say hunt slowly, then blend it in one smooth read."
+        ]
+      },
+      {
+        "kind": "choice",
+        "prompt": "Blend m · i · n · t. Which word did you read?",
+        "hint": "Use the short i sound. Blend the last two sounds /n/ and /t/.",
+        "options": [
+          "mint",
+          "mist",
+          "milt"
+        ],
+        "answer": 0,
+        "feedback": "Blend m · i · n · t to read mint. The final letters stand for two sounds, /n/ and /t/.",
+        "hints": [
+          "Look at the letters from left to right. Notice the sounds at the end.",
+          "Use the short i sound. Blend the last two sounds /n/ and /t/.",
+          "Blend m · i · n · t to read mint. The final letters stand for two sounds, /n/ and /t/."
+        ],
+        "errorCategory": "incorrect-word-selection"
+      },
+      {
+        "kind": "choice",
+        "prompt": "Blend p · a · n · t. Which word did you read?",
+        "hint": "Use the short a sound, then finish with /n/ and /t/.",
+        "options": [
+          "past",
+          "pant",
+          "part"
+        ],
+        "answer": 1,
+        "feedback": "Blend p · a · n · t to read pant. Keep the /n/ before the final /t/.",
+        "hints": [
+          "Look at the letters from left to right. Notice the sounds at the end.",
+          "Use the short a sound, then finish with /n/ and /t/.",
+          "Blend p · a · n · t to read pant. Keep the /n/ before the final /t/."
+        ],
+        "errorCategory": "incorrect-word-selection"
+      }
+    ]
+  },
+  {
+    "id": "practice-nt-sounds-v1",
+    "skill": "phonics",
+    "type": "letter-sound-and-decoding",
+    "categories": [
+      "PHONICS_BASED_LEARNING"
+    ],
+    "difficultyTier": "CVCC-final-nt",
+    "competencies": [
+      "EN3PWS-I-2"
+    ],
+    "title": "Listen for the sounds in nt",
+    "instructions": "Let your teacher model the sounds. Then try two new words.",
+    "version": "1",
+    "source": "Original Litera demonstration material",
+    "license": "Project-authored demo material",
+    "intendedUse": "practice",
+    "assistance": "teacher-guided",
+    "steps": [
+      {
+        "kind": "guide",
+        "prompt": "Hear the two ending sounds",
+        "cue": "Teacher: model /n/ and /t/ in lint. Say the sounds you hear, then read lint as a whole word.",
+        "action": "Practice with the teacher",
+        "hints": [
+          "Look at the words or sounds that need another try.",
+          "Ask your teacher to model the difficult part slowly.",
+          "Teacher: model /n/ and /t/ in lint. Say the sounds you hear, then read lint as a whole word."
+        ]
+      },
+      {
+        "kind": "choice",
+        "prompt": "Which letters spell the ending sounds /n/ and /t/ in hint?",
+        "hint": "Listen for /n/ first, then /t/.",
+        "options": [
+          "st",
+          "nd",
+          "nt"
+        ],
+        "answer": 2,
+        "feedback": "In hint, n spells /n/ and t spells /t/. Read the whole word again.",
+        "hints": [
+          "Look at the letters from left to right. Notice the sounds at the end.",
+          "Listen for /n/ first, then /t/.",
+          "In hint, n spells /n/ and t spells /t/. Read the whole word again."
+        ],
+        "errorCategory": "incorrect-word-selection"
+      },
+      {
+        "kind": "choice",
+        "prompt": "Which word matches p · u · n · t?",
+        "hint": "Use the short u sound, then keep both ending sounds.",
+        "options": [
+          "punt",
+          "puck",
+          "pulp"
+        ],
+        "answer": 0,
+        "feedback": "Blend p · u · n · t and read punt. Keep both sounds at the end.",
+        "hints": [
+          "Look at the letters from left to right. Notice the sounds at the end.",
+          "Use the short u sound, then keep both ending sounds.",
+          "Blend p · u · n · t and read punt. Keep both sounds at the end."
+        ],
+        "errorCategory": "incorrect-word-selection"
+      }
+    ]
+  },
+  {
+    "id": "practice-kite-reread-v1",
+    "passageId": "practice-rainy-kite",
+    "skill": "oral",
+    "type": "guided-rereading",
+    "categories": [
+      "GUIDED_ORAL_READING",
+      "ORAL_REREADING",
+      "CONNECTED_TEXT_READING",
+      "SUPPORTED_CONNECTED_TEXT_READING",
+      "ACCESSIBLE_CURRENT_LEVEL_PRACTICE"
+    ],
+    "difficultyTier": "short-text",
+    "competencies": [
+      "EN3CAT-I-1"
+    ],
+    "title": "The Kite in the Hall",
+    "instructions": "Listen, read aloud, and reread with your teacher.",
+    "version": "1",
+    "source": "Original Litera demonstration material",
+    "license": "Project-authored demo material",
+    "intendedUse": "practice",
+    "assistance": "teacher-guided",
+    "passage": [
+      "Rain tapped on the roof.",
+      "Nia took her kite into the hall.",
+      "She tied a loose knot in its tail.",
+      "When the rain stopped, Nia carried the kite outside."
+    ],
+    "wordCues": [
+      {
+        "word": "tapped",
+        "cue": "Read tap first, then listen as your teacher models the ending in tapped."
+      },
+      {
+        "word": "knot",
+        "cue": "In knot, kn spells the initial /n/ sound. Read knot again in the sentence."
+      }
+    ],
+    "steps": [
+      {
+        "kind": "guide",
+        "prompt": "Listen to a model",
+        "cue": "Teacher: read the passage aloud. Pause at full stops. Point to a word the learner wants to practise and use a word cue if needed.",
+        "action": "Heard the model",
+        "hints": [
+          "Look at the words or sounds that need another try.",
+          "Ask your teacher to model the difficult part slowly.",
+          "Teacher: read the passage aloud. Pause at full stops. Point to a word the learner wants to practise and use a word cue if needed."
+        ]
+      },
+      {
+        "kind": "guide",
+        "prompt": "Read the passage aloud",
+        "cue": "Teacher: note any difficult word. Model it, have the learner say it, and reread the whole sentence together.",
+        "action": "Finished the first read",
+        "hints": [
+          "Look at the words or sounds that need another try.",
+          "Ask your teacher to model the difficult part slowly.",
+          "Teacher: note any difficult word. Model it, have the learner say it, and reread the whole sentence together."
+        ]
+      },
+      {
+        "kind": "guide",
+        "prompt": "Reread and talk about the story",
+        "cue": "Reread the passage. Ask why Nia took the kite inside. Let the learner point to the sentence about rain.",
+        "action": "Finished the reread",
+        "hints": [
+          "Look at the words or sounds that need another try.",
+          "Ask your teacher to model the difficult part slowly.",
+          "Reread the passage. Ask why Nia took the kite inside. Let the learner point to the sentence about rain."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "practice-lunch-box-v1",
+    "passageId": "practice-blue-lunch-box",
+    "skill": "comprehension",
+    "type": "literal-and-text-evidence",
+    "categories": [
+      "GUIDED_COMPREHENSION",
+      "SUPPORTED_COMPREHENSION",
+      "CONNECTED_TEXT_MEANING"
+    ],
+    "difficultyTier": "short-text",
+    "competencies": [
+      "EN3CAT-I-2"
+    ],
+    "title": "The Blue Lunch Box",
+    "instructions": "Read the story and look for the sentence that answers each question.",
+    "version": "1",
+    "source": "Original Litera demonstration material",
+    "license": "Project-authored demo material",
+    "intendedUse": "practice",
+    "assistance": "teacher-guided",
+    "passage": [
+      "Omar found a blue lunch box under the steps.",
+      "He carried it to the school office.",
+      "The next morning, Bea came to get it.",
+      "She thanked Omar for keeping it safe."
+    ],
+    "steps": [
+      {
+        "kind": "choice",
+        "prompt": "Where did Omar find the lunch box?",
+        "hint": "Reread the first sentence and look for the word under.",
+        "options": [
+          "In the office",
+          "Under the steps",
+          "On a bench"
+        ],
+        "answer": 1,
+        "feedback": "The first sentence says that Omar found it under the steps.",
+        "evidenceLine": 0,
+        "hints": [
+          "Find the part of the story that answers the question.",
+          "Reread the first sentence and look for the word under.",
+          "The first sentence says that Omar found it under the steps."
+        ],
+        "errorCategory": "incorrect-answer-choice"
+      },
+      {
+        "kind": "choice",
+        "prompt": "Which sentence tells who came to get the lunch box?",
+        "hint": "Find the sentence that names the person who came to get it.",
+        "options": [
+          "Sentence 1",
+          "Sentence 2",
+          "Sentence 3"
+        ],
+        "answer": 2,
+        "feedback": "Sentence 3 names Bea. She came to get the lunch box the next morning.",
+        "evidenceLine": 2,
+        "hints": [
+          "Find the part of the story that answers the question.",
+          "Find the sentence that names the person who came to get it.",
+          "Sentence 3 names Bea. She came to get the lunch box the next morning."
+        ],
+        "errorCategory": "incorrect-answer-choice"
+      }
+    ]
+  },
+  {
+    "id": "practice-library-mixed-v1",
+    "passageId": "practice-library-book",
+    "skill": "comprehension",
+    "type": "mixed-reading",
+    "categories": [
+      "MIXED_READING",
+      "ROTATING_REVIEW",
+      "ACCESSIBLE_CURRENT_LEVEL_PRACTICE"
+    ],
+    "difficultyTier": "short-text",
+    "competencies": [
+      "EN3CAT-I-1",
+      "EN3CAT-I-2"
+    ],
+    "title": "The Library Book",
+    "instructions": "Review a word, read a short story, and find a detail.",
+    "version": "1",
+    "source": "Original Litera demonstration material",
+    "license": "Project-authored demo material",
+    "intendedUse": "practice",
+    "assistance": "teacher-guided",
+    "passage": [
+      "Ivy put a book on the desk.",
+      "She gave the book to her teacher.",
+      "The class read the story together."
+    ],
+    "wordCues": [
+      {
+        "word": "desk",
+        "cue": "Read d · e · s · k. Blend the sounds and keep both sounds at the end."
+      }
+    ],
+    "steps": [
+      {
+        "kind": "guide",
+        "prompt": "Review a word and read",
+        "cue": "Teacher: model desk. Read the first sentence together, then let the learner read the short passage.",
+        "action": "Finished reading",
+        "hints": [
+          "Look at the words or sounds that need another try.",
+          "Ask your teacher to model the difficult part slowly.",
+          "Teacher: model desk. Read the first sentence together, then let the learner read the short passage."
+        ]
+      },
+      {
+        "kind": "choice",
+        "prompt": "Who got the book from Ivy?",
+        "hint": "Look for the words gave the book in the second sentence.",
+        "options": [
+          "Her teacher",
+          "Her sister",
+          "Her friend"
+        ],
+        "answer": 0,
+        "feedback": "The second sentence says Ivy gave the book to her teacher.",
+        "evidenceLine": 1,
+        "hints": [
+          "Find the part of the story that answers the question.",
+          "Look for the words gave the book in the second sentence.",
+          "The second sentence says Ivy gave the book to her teacher."
+        ],
+        "errorCategory": "incorrect-answer-choice"
+      }
+    ]
+  }
+]
