@@ -140,4 +140,3 @@ function Assessment({ form, learnerId, sessionId, reset, onComplete }: {
     </section>}
   </>;
 }
-

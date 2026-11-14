@@ -1,5 +1,19 @@
 # Litera changelog
 
+## Phase 10 portrait and TTS integration
+
+- Ported the Phase 10 desktop portrait preview into the active app. The same practice and review components stay mounted when the preview switches.
+- Applied the compact lesson, recording, and review layouts in the preview and on narrow handsets. Kept older assessment components available as source.
+- Rechecked the backend speech, emailed login, and teacher-validated progress workflow on the integrated build.
+
+## Final UI integration and backend practice speech
+
+- Updated the learner sign-in password label, added show/hide controls, and kept email signup, password delivery, and teacher authorization.
+- Optimized the student and teacher portals for portrait phones with safe-area spacing, compact navigation, and larger controls.
+- Added authenticated FastAPI audio for approved guided steps at two speeds. The existing device voice is available as an explicit fallback.
+- Kept audio usage in practice history and retained existing scoring, reassessment, and recommendation rules.
+- Removed unused root assessment views and moved the original Filipino prototype to `legacy/filipino-demo/`.
+
 ## Guided practice audio
 
 - Added user-initiated English listening, slow playback, replay, and stop controls in Word Village, Story Forest, and Meaning Mountain.

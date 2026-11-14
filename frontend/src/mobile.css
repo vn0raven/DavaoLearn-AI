@@ -1,0 +1,117 @@
+/* Shared safe areas and compact portrait layout for the integrated portals. */
+.litera-header-inner, .lesson-home, .reading-page {
+  --gutter: clamp(.875rem, 2.5vw, 2.5rem);
+  padding-left: max(var(--gutter), env(safe-area-inset-left));
+  padding-right: max(var(--gutter), env(safe-area-inset-right));
+}
+.litera-header { padding-top: env(safe-area-inset-top); }
+#root {
+  container: litera-app / inline-size;
+  min-height: 100vh;
+  min-height: 100dvh;
+  min-width: 0;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.layout-toggle { display: none; }
+
+@media (min-width: 900px) {
+  .layout-toggle { display: inline-flex; }
+  .layout-toggle[aria-pressed="true"] { background: #eee2ff; border-color: #9367ce; }
+  body.litera-phone-preview { background: #e8e1f1; }
+  body.litera-phone-preview #root {
+    width: 390px;
+    margin-inline: auto;
+    background: linear-gradient(180deg, #f9f5ff, #f2edfd);
+    box-shadow: 0 0 0 1px #d8cce5, 0 18px 60px #36224940;
+  }
+  body.litera-phone-preview .modal-screen {
+    inset-inline: calc((100% - 390px) / 2);
+  }
+}
+#root :is(button, a, input, textarea, select, summary):focus-visible { outline: 3px solid #6737ab; outline-offset: 2px; }
+#root :is(#lessons, #journey, #progress, #teacher-home, #queue, #progress-review) { scroll-margin-top: 6rem; }
+
+@container litera-app (max-width: 640px) {
+  #root :is(#lessons, #journey, #progress, #teacher-home, #queue, #progress-review) { scroll-margin-top: 1rem; }
+  .litera-header { position: static; }
+  .litera-header-inner { flex-wrap: wrap; min-height: 3.6rem; padding-block: .45rem; column-gap: .5rem; row-gap: .3rem; }
+  .litera-wordmark img { width: 7.05rem; }
+  .header-greeting, .account-nav .account-avatar { display: none; }
+  .account-nav { gap: .35rem; }
+  .account-nav .button { padding-inline: .5rem; font-size: .8rem; }
+  .litera-header nav.app-nav {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    order: 3;
+    flex-basis: 100%;
+    width: 100%;
+    max-width: none;
+    border-top: 1px solid #f1ebf8;
+    gap: .2rem;
+    overflow: visible;
+    padding-bottom: .15rem;
+  }
+  .app-nav :is(button, a) {
+    justify-content: center;
+    flex-direction: column;
+    text-align: center;
+    white-space: normal;
+    min-height: 48px;
+    font-size: .75rem;
+    font-weight: 750;
+    line-height: 1.1;
+    padding: .3rem .15rem;
+  }
+  .litera-header .button, .lesson-home .button, .reading-page .button,
+  .quest-choice, .verdict-button, .reading-word-chip { min-height: 44px; min-width: 44px; }
+  .lesson-home :is(input:not([type="checkbox"]):not([type="radio"]), textarea, select) {
+    font-size: 1rem;
+    min-width: 0;
+    max-width: 100%;
+    scroll-margin-block: 1rem;
+  }
+  .auth-home { grid-template-columns: minmax(0, 1fr); gap: 1rem; padding-block: 1rem 1.4rem; }
+  .auth-intro { padding: .9rem 1rem; border-radius: 1.1rem; background: #ede1ff; }
+  .auth-intro h1 { font-size: clamp(1.7rem, 6.2vw, 2.15rem); }
+  .auth-intro p { font-size: .95rem; margin-top: .3rem; }
+  .auth-illustration { display: none; }
+  .auth-panel { min-width: 0; }
+  .litera-hero {
+    flex-direction: column;
+    align-items: flex-start;
+    min-height: 0;
+    padding: 1.1rem;
+    gap: .65rem;
+  }
+  .litera-hero h1 { font-size: clamp(1.5rem, 7cqw, 1.95rem); line-height: 1.17; }
+  .hero-copy { max-width: 100%; }
+  .hero-illustration { width: 65%; opacity: .17; }
+  .hero-actions { align-self: flex-start; margin-left: 0; }
+  .student-dashboard-grid, .teacher-columns, .reading-grid,
+  .lesson-grid, .quest-zones, .take-grid, .teacher-take-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .reading-grid { grid-template-areas: "story" "audio" "check"; }
+  .lesson-card { min-height: 0; }
+  .quest-recommended > div, .quest-resume > div { min-width: 0; }
+  .quest-recommended .button, .quest-resume .button { width: 100%; }
+  .learning-panel, .submitted-panel, .empty-results { min-height: 0; }
+  .practice-art { display: none; }
+  .lesson-home audio { max-width: 100%; }
+  .story-words { font-size: clamp(1.13rem, 5cqw, 1.5rem); overflow-wrap: anywhere; }
+  .record-actions [role="status"] { flex-basis: 100%; }
+  .profile-review-panel .skill-grid, .oral-review-layout, .phonics-review-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .teacher-columns :is(.panel, .submission-list, .submission-row, .take-card) { min-width: 0; }
+  .teacher-columns .submission-row { gap: .4rem; overflow-wrap: anywhere; }
+  .queue-panel { position: static; max-height: 30rem; overflow-y: auto; }
+  .queue-panel .pill-status { white-space: normal; text-align: center; }
+  .teacher-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .review-heading-actions { justify-content: flex-start; }
+  .phonics-verdict { gap: .4rem; }
+  .word-verdict-actions { width: 100%; }
+  .modal-screen { padding: .65rem max(.65rem, env(safe-area-inset-right)) max(.65rem, env(safe-area-inset-bottom)) max(.65rem, env(safe-area-inset-left)); }
+  .modal-panel { max-height: min(90vh, 90dvh); min-width: 0; }
+}

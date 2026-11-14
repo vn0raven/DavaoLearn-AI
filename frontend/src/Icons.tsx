@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 
-type IconName = 'book'|'mic'|'question'|'chart'|'target'|'clipboard'|'headphones'|'sparkles'|'refresh'|'search'|'home'|'layers'|'check'|'arrow'|'clock'|'lock'|'users'|'file'|'info'|'logout'|'pencil';
+type IconName = 'book'|'mic'|'question'|'chart'|'target'|'clipboard'|'headphones'|'sparkles'|'refresh'|'search'|'home'|'layers'|'check'|'arrow'|'clock'|'lock'|'users'|'file'|'info'|'logout'|'pencil'|'smartphone';
 const shapes: Record<IconName, ReactNode> = {
+  smartphone: <><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18.5h2"/></>,
   book: <><path d="M12 7c-2.6-1.8-5.2-2.1-9-1.6v13c4-.5 6.4-.1 9 1.6m0-13c2.6-1.8 5.2-2.1 9-1.6v13c-4-.5-6.4-.1-9 1.6M12 7v13"/></>,
   mic: <><rect x="9" y="2.5" width="6" height="13" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3m-4 0h8"/></>,
   question: <><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.8 2.8 0 1 1 4.5 2.2c-1.5 1-2 1.6-2 3m0 3h.01"/></>,

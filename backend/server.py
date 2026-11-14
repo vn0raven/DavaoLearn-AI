@@ -12,6 +12,7 @@ from .auth import EmailAuth, auth_router, gmail_sender
 from .evidence_api import open_store
 from .reviews import install_reviews
 from .practice import install_practice
+from .tts import install_tts
 from .scoring import load_forms
 
 LOG = logging.getLogger(__name__)
@@ -32,6 +33,7 @@ def create_app(auth=None, *, review_path=None, evidence_path=None):
     app.state.reviews = install_reviews(app, auth, forms, store, review_path)
     app.state.evidence = store
     app.state.practice = install_practice(app, auth)
+    install_tts(app, auth, app.state.practice)
 
     @app.get('/api/health')
     def health():

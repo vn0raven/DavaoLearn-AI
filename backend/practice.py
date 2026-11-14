@@ -149,6 +149,12 @@ class PracticeRepository:
             rows = db.execute('SELECT payload FROM practice_runs WHERE learner_id=? ORDER BY rowid ASC', (learner_id,)).fetchall()
         return [json.loads(row['payload']) for row in rows]
 
+    def get(self, learner_id, run_id):
+        with self.connect() as db:
+            row = db.execute('SELECT payload FROM practice_runs WHERE learner_id=? AND run_id=?',
+                             (learner_id, run_id)).fetchone()
+        return json.loads(row['payload']) if row else None
+
     def save(self, learner_id, run_id, run: PracticeRun):
         if str(run.runId) != run_id or run.learnerId != learner_id:
             raise HTTPException(403, 'Cannot save another learner\'s practice progress.')

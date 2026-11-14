@@ -25,23 +25,21 @@ export function AuthScreen({ onVerify }: { onVerify: (account: Account) => void 
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const passwordField = useRef<HTMLInputElement>(null);
   const emailField = useRef<HTMLInputElement>(null);
-  const wasSent = useRef(false);
 
   useEffect(() => {
-    if (busy) return;
-    if (sent) passwordField.current?.focus();
-    else if (wasSent.current) emailField.current?.focus();
-    wasSent.current = sent;
+    if (sent && !busy) passwordField.current?.focus();
   }, [sent, busy]);
 
   function editEmail() {
     setPassword("");
+    setShowPassword(false);
     setSent(false);
     setNotice("");
     setError("");
@@ -54,6 +52,7 @@ export function AuthScreen({ onVerify }: { onVerify: (account: Account) => void 
     try {
       await authPost(mode, { email: email.trim() });
       setPassword("");
+      setShowPassword(false);
       setSent(true);
       setNotice(mode === "signup"
         ? "If this email is new to Litera, a temporary password is on its way."
@@ -85,7 +84,6 @@ export function AuthScreen({ onVerify }: { onVerify: (account: Account) => void 
     } catch (error) {
       setError(messageFor(error));
     } finally {
-      setPassword("");
       setBusy(false);
     }
   }
@@ -94,10 +92,7 @@ export function AuthScreen({ onVerify }: { onVerify: (account: Account) => void 
     <div className="auth-intro">
       <h1>My reading lessons</h1>
       <p>Grade 3 English</p>
-      <ul className="auth-activities" aria-label="Reading activities">
-        <li><span className="lesson-icon" aria-hidden="true">▤</span> Read aloud</li>
-        <li><span className="lesson-icon" aria-hidden="true">Aa</span> Practice phonics</li>
-      </ul>
+      <div className="auth-illustration" aria-hidden="true" />
     </div>
     <section className="panel auth-panel" aria-labelledby="auth-title">
       <div className="auth-switch" aria-label="Account options" role="group">
@@ -111,28 +106,37 @@ export function AuthScreen({ onVerify }: { onVerify: (account: Account) => void 
           }}
         >{option === "login" ? "Log in" : "Sign up"}</button>)}
       </div>
-      <h2 id="auth-title">{sent ? "Enter your temporary password" : mode === "login" ? "Log in to Litera" : "Create your Litera account"}</h2>
+      <h2 id="auth-title">{sent ? "Check your email" : mode === "login" ? "Log in to Litera" : "Create your Litera account"}</h2>
       {!sent && <p>Enter your email and we’ll send you a temporary password.</p>}
       {sent && <div className="auth-email-status">
-        <p className="auth-address">{email.trim()}</p>
-        <p>Check your inbox and spam folder. Your password expires after 15 minutes.</p>
+        <p>{mode === "signup" ? "Enter the temporary password from your signup email." : "Use the password from your latest Litera email."} Check spam if needed. The password expires after 15 minutes.</p>
       </div>}
       <form onSubmit={submit} aria-busy={busy}>
-        {sent ? <label className="field">Temporary password
-          <input ref={passwordField} value={password} onChange={event => setPassword(event.target.value)}
-            type="password" autoComplete="one-time-code" maxLength={64} required disabled={busy} />
-        </label> : <label className="field">Email address
+        <label className="field">Email address
           <input ref={emailField} value={email} onChange={event => setEmail(event.target.value)}
-            type="email" autoComplete="email" maxLength={254} placeholder="you@example.com" required disabled={busy} />
-        </label>}
+            type="email" autoComplete="email" maxLength={254} placeholder="you@example.com" required
+            readOnly={sent} disabled={busy} />
+        </label>
+        {sent && <div className="auth-password">
+          <label className="field" htmlFor="litera-password">{mode === "login" ? "Enter Password" : "Temporary password"}
+            <input id="litera-password" ref={passwordField} value={password}
+              onChange={event => setPassword(event.target.value)} type={showPassword ? "text" : "password"}
+              autoComplete="one-time-code" autoCapitalize="none" spellCheck={false} maxLength={64} required disabled={busy} />
+          </label>
+          <button type="button" className="button quiet-button" aria-controls="litera-password"
+            disabled={busy} onClick={() => setShowPassword(visible => !visible)}>{showPassword ? "Hide password" : "Show password"}</button>
+        </div>}
         <button type="submit" className="button primary auth-continue" disabled={busy}>
-          {busy ? "Please wait…" : sent ? (mode === "signup" ? "Create account and continue" : "Verify and log in") : "Email my temporary password"}
+          {busy ? "Please wait…" : sent ? (mode === "signup" ? "Create account and continue" : "Log in") : "Email me a password"}
         </button>
       </form>
       {notice && <p className="auth-notice" role="status">{notice}</p>}
       {error && <p className="auth-error" role="alert">{error}</p>}
       {sent && <div className="auth-help">
-        <button type="button" className="button" disabled={busy} onClick={editEmail}>Change email</button>
+        <button type="button" className="button" disabled={busy} onClick={() => {
+          editEmail();
+          emailField.current?.focus();
+        }}>Change email</button>
         <button type="button" className="button" disabled={busy} onClick={sendPassword}>Send again</button>
       </div>}
     </section>

@@ -13,13 +13,25 @@ import './auth.css';
 import './integrated.css';
 import './litera-refresh.css';
 import './practice/quest.css';
+import './mobile.css';
 
 type Navigation = {target:string;version:number};
+const learnerNav = [
+  {target:'home', label:'Home', icon:'home'},
+  {target:'lessons', label:'Assessments', icon:'clipboard'},
+  {target:'progress', label:'My progress', icon:'chart'},
+  {target:'journey', label:'Practice', icon:'book'},
+] as const;
 function App() {
   const isTeacher = window.location.pathname === '/teacher';
   const [account,setAccount] = useState<Account|null|undefined>(undefined);
   const [error,setError] = useState('');
   const [navigation,setNavigation] = useState<Navigation|undefined>();
+  const [phonePreview,setPhonePreview] = useState(false);
+  useEffect(() => {
+    document.body.classList.toggle('litera-phone-preview', phonePreview);
+    return () => document.body.classList.remove('litera-phone-preview');
+  }, [phonePreview]);
   useEffect(()=>{if(isTeacher)return;request<Account>('/api/auth/session').then(setAccount).catch(err=>{
     if(!(err instanceof RequestError&&err.status===401))setError('Cannot check your account. Confirm the server is running.');
     setAccount(null);
@@ -32,9 +44,15 @@ function App() {
   return <><header className="litera-header"><div className="litera-header-inner">
     <a className="litera-wordmark" href={isTeacher?'/teacher':'/'} aria-label="Litera home"><img src={logo} alt="Litera" width={146} height={43}/></a>
     {isTeacher?<nav className="app-nav" aria-label="Teacher navigation"><a href="#teacher-home"><Icon name="home" size={19}/> Overview</a><a href="#queue"><Icon name="clipboard" size={19}/> Assessment queue</a><a href="#progress-review"><Icon name="chart" size={19}/> Learner progress</a></nav>:
-      account?<nav className="app-nav" aria-label="Learner navigation"><button className="current" onClick={()=>jump('home')}><Icon name="home" size={19}/> Home</button><button onClick={()=>jump('lessons')}><Icon name="clipboard" size={19}/> Assessments</button><button onClick={()=>jump('progress')}><Icon name="chart" size={19}/> My progress</button><button onClick={()=>jump('journey')}><Icon name="book" size={19}/> Practice</button></nav>:
+      account?<nav className="app-nav" aria-label="Learner navigation">{learnerNav.map(({target,label,icon})=><button type="button" key={target}
+        aria-current={(navigation?.target ?? 'home') === target ? 'location' : undefined}
+        className={(navigation?.target ?? 'home') === target ? 'current' : undefined}
+        onClick={()=>jump(target)}><Icon name={icon} size={19}/> {label}</button>)}</nav>:
       <span className="header-greeting">Learn to read. Grow with Litera.</span>}
-    <div className="account-nav">{isTeacher?<a className="button quiet-button" href="/">Student portal</a>:account?<><span className="account-avatar" aria-label="Learner account">L</span><button className="button quiet-button" onClick={()=>void signOut()}><Icon name="logout" size={17}/> Log out</button></>:<a className="button quiet-button" href="/teacher"><Icon name="lock" size={17}/> Teacher portal</a>}</div>
+    <div className="account-nav"><button type="button" className="button quiet-button layout-toggle"
+      aria-pressed={phonePreview} onClick={() => setPhonePreview(current => !current)}>
+      <Icon name="smartphone" size={18}/> Portrait preview
+    </button>{isTeacher?<a className="button quiet-button" href="/">Student portal</a>:account?<><span className="account-avatar" aria-label="Learner account">L</span><button className="button quiet-button" onClick={()=>void signOut()}><Icon name="logout" size={17}/> Log out</button></>:<a className="button quiet-button" href="/teacher"><Icon name="lock" size={17}/> Teacher portal</a>}</div>
   </div>{error&&<p className="account-alert" role="alert">{error}</p>}</header>
     {isTeacher?<TeacherDashboard/>:account===undefined?<main className="lesson-home"><p role="status">Checking your login…</p></main>:
       account===null?<AuthScreen onVerify={setAccount}/>:<StudentDashboard key={account.learnerId} learnerId={account.learnerId} navigation={navigation}/>}

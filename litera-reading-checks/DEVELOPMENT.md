@@ -5,7 +5,7 @@ This package enhances the original Phase 6 TypeScript/React/Vite + Python/FastAP
 ## Windows 11 setup
 
 1. Extract `BasaBridge_Enhanced_Phase6.zip` to a simple folder (e.g., `C:\Projects\BasaBridge-Enhanced`). Keep `voice`, `litera-reading-checks`, and `tests` together.
-2. Install **Node.js 22.12+** and **Python 3.11 or 3.12**. Do not use the older static `dist/index.html` for the English lesson demo.
+2. Install **Node.js 22.12+** and **Python 3.11 or 3.12**. Do not use the older static `legacy/filipino-demo/index.html` for the English lesson demo.
 3. Open PowerShell in `C:\Projects\BasaBridge-Enhanced\litera-reading-checks`.
 4. Run `npm --prefix frontend ci`, then `npm --prefix frontend test`, then `npm --prefix frontend run build`.
 5. Double-click `Start-Litera.cmd` to set up Python (or activate `.venv` and run `python -m pip install -r backend/requirements.txt`). The launcher creates the enhanced-build marker only after a successful React build.

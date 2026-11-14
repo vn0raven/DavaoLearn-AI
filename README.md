@@ -33,7 +33,7 @@ In the June 2026 beginning-of-school-year CRLA results, **45% of assessed learne
 | 🎤 **Oral reading** — recorded passage reading and word accuracy | 💡 **Guided hints** — step-by-step support during practice | 📋 **Learner overview** — separate skill results and review needs |
 | 📖 **Comprehension** — questions about text | 🗺️ **Reading quests** — private progress and gentle rewards | 🔁 **Reassessment** — fresh independent checks |
 
-Guided quests include optional English audio in Word Village, Story Forest, and Meaning Mountain. Speech transcription gives the teacher an advisory preview. Teacher validation determines the assessment result.
+Guided quests include optional English audio in Word Village, Story Forest, and Meaning Mountain. The student and teacher portals adapt to portrait phones, tablets, and desktop browsers. Speech transcription gives the teacher an advisory preview. Teacher validation determines the assessment result.
 
 ### 🖼️ Interface preview
 
@@ -82,22 +82,22 @@ Quest completion reflects **practice participation**, not confirmed reading mast
 
 **Requirements:** Windows 11, Python 3.11–3.12, Node.js 22.12+, Chrome or Edge. First-time installation/model downloads need internet access.
 
-From the repository root, copy `.env.example` to `.env` if needed and set the existing sign-in and teacher credentials. Run the launcher from that same folder.
+In the repository root, copy `.env.example` to `.env` if needed. Set the Gmail sign-in and teacher key values, then launch the integrated app.
 
 ```powershell
 .\Start-Litera.cmd
 ```
 
-Open **http://127.0.0.1:8765** and use **fictional learner data** with consenting adult voices for recording demonstrations. The launcher builds `frontend/` and runs `backend/`. Guided spoken models use a local English system voice if available. Open **Practice** to try **Listen**, **Listen Slowly**, **Listen Again**, and **Stop**. Word Village also lets learners record and replay a short rehearsal within the current step.
+Open **http://127.0.0.1:8765**. On desktop, click **Portrait preview** to rehearse the phone layout. Use **fictional learner data** with consenting adult voices for recording demonstrations. The launcher builds `frontend/` and runs `backend/`. FastAPI serves English practice audio from a local synthesis engine. Windows uses an installed English desktop voice. A local browser voice is available as a fallback where supported. Open **Practice** to try **Listen**, **Listen Slowly**, **Listen Again**, and **Stop**. Word Village also lets learners record and replay a short rehearsal within the current step.
 
-See the [developer checklist](DEVELOPMENT.md#guided-practice-audio) for voice setup, browser testing, and adding teacher-recorded sound models.
+The [repository audit](docs/UI-INTEGRATION.md) describes the source branches and demo verification. See the [developer checklist](DEVELOPMENT.md#guided-practice-audio) for voice setup, browser testing, and adding teacher-recorded sound models.
 
 ## 🛠️ Tech stack
 
-**Frontend:** React · TypeScript · Vite  
-**Backend:** FastAPI · Python · SQLite  
-**Speech:** Local `faster-whisper` transcription for teacher review  
-**Recommendations:** Transparent, rule-based decision tree
+- **Frontend** — React, TypeScript, Vite
+- **Backend** — FastAPI, Python, SQLite
+- **Speech** — Local `faster-whisper` transcription and guided-practice TTS
+- **Recommendations** — Rule-based decision tree
 
 ## 📚 References
 
