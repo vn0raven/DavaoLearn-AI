@@ -235,3 +235,32 @@ get("record").onclick = async () => {
 };
 showPrompt();
 refreshPlan();
+
+async function setupFixtures() {
+  try {
+    const response = await fetch("/fixtures.json");
+    if (!response.ok) return;
+    const fixtures = await response.json();
+    const select = get("fixture");
+    select.add(new Option("Select a synthetic learner", ""));
+    fixtures.forEach((fixture, index) => select.add(new Option(fixture.label, index)));
+    get("fixtureLabel").hidden = false;
+    select.onchange = () => {
+      if (select.value === "") return;
+      if (checks.length && !window.confirm("Replace the current demo checks?")) {
+        select.value = "";
+        return;
+      }
+      checks = structuredClone(fixtures[Number(select.value)].checks);
+      voiceScores.clear();
+      refreshVoiceTally();
+      override = null;
+      get("access").checked = true;
+      get("probe").elements.session.value = "2";
+      save();
+      refreshPlan();
+      select.value = "";
+    };
+  } catch { /* Manual checks remain available. */ }
+}
+setupFixtures();

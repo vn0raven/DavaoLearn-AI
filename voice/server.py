@@ -46,6 +46,10 @@ def script():
 def style():
     return FileResponse(STATIC / "style.css", media_type="text/css")
 
+@app.get("/fixtures.json")
+def fixtures():
+    return FileResponse(STATIC / "fixtures.json", media_type="application/json")
+
 @app.get("/health")
 def health():
     return {"status": "ok", "voice_loaded": bool(voice_model.cache_info().currsize)}
