@@ -1,0 +1,24 @@
+[
+  {
+    "passageId": "seed-bag",
+    "formId": "ORAL-A",
+    "title": "The Seed Bag",
+    "text": "Lino helped his class plant seeds. Before the bell rang, he set the bag of seeds on a bench by the garden gate. After class, he came back with Ana. They took the bag to the garden and planted the seeds.",
+    "difficultyTier": "short-text",
+    "wordCount": 41,
+    "competency": "MATATAG English Grade 3 · EN3CAT-I-1 (accuracy only)",
+    "version": "1.0.0",
+    "source": "Original demonstration passage from BasaBridge Grade 3 English Reading Resources"
+  },
+  {
+    "passageId": "plant-labels",
+    "formId": "ORAL-B",
+    "title": "The Plant Labels",
+    "text": "Mia helped her class make labels for the garden. Before lunch, she set the labels on a shelf by the classroom door. After lunch, she came back with Ben. They took the labels outside and placed them beside the plants.",
+    "difficultyTier": "short-text",
+    "wordCount": 40,
+    "competency": "MATATAG English Grade 3 · EN3CAT-I-1 (accuracy only)",
+    "version": "1.0.0",
+    "source": "Original demonstration passage from BasaBridge Grade 3 English Reading Resources"
+  }
+]

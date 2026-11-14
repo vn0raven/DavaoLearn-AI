@@ -1,0 +1,23 @@
+:root{font:16px/1.5 system-ui,sans-serif;color:#172b23;background:#eff4f0}
+body{margin:0;padding:1.5rem 1rem}
+main{max-width:38rem;margin:auto}
+header p{margin:.35rem 0}
+.brand{color:#21674b;font-weight:750}
+h1,h2,h3{line-height:1.2;margin:.35rem 0}
+h1{font-size:2.2rem}
+section{background:white;border:1px solid #c4d4cb;border-radius:14px;padding:1.25rem;margin:1rem 0}
+label{display:block;margin:.75rem 0}
+label input:not([type=checkbox]),select{display:block;width:100%;margin-top:.25rem;box-sizing:border-box}
+button,input,select{font:inherit;color:inherit;border:1px solid #688b79;border-radius:7px;background:white;padding:.48rem .7rem}
+button{cursor:pointer;margin:.25rem 0}
+button:disabled{opacity:.55;cursor:default}
+button.primary{background:#15583d;color:white}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #a04d17;outline-offset:2px}
+.controls{display:flex;gap:.45rem;flex-wrap:wrap}
+.word{font-size:clamp(3rem,14vw,5rem);letter-spacing:.03em;padding:1.1rem;background:#eaf4ed;border-radius:10px}
+.signal{background:#f0f5f2;padding:.7rem;border-radius:7px}
+.signal p{margin:.25rem 0}
+.meta{color:#446357}
+.result{font-size:2rem;font-weight:750}
+audio{width:100%;margin-top:.5rem}
+pre{overflow:auto;padding:.5rem;background:#edf1ed}
