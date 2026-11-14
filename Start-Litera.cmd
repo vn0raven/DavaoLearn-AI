@@ -18,23 +18,7 @@ if not exist ".venv\Scripts\python.exe" (
   if errorlevel 1 py -3.11 -m venv .venv
   if errorlevel 1 goto failed
 )
-echo Installing Python dependencies (first run may download speech model packages)...
-".venv\Scripts\python.exe" -m pip install -r backend\requirements.txt
-if errorlevel 1 goto failed
-echo Installing frontend dependencies...
-call npm --prefix frontend ci
-if errorlevel 1 goto failed
-echo Compiling frontend...
-call npm --prefix frontend run build
-if errorlevel 1 goto failed
-echo.
-echo ===================================================
-echo Litera student: http://127.0.0.1:8765
-echo Litera teacher: http://127.0.0.1:8765/teacher
-echo Keep this terminal open. Press Ctrl+C to stop.
-echo ===================================================
-echo.
-".venv\Scripts\python.exe" -m backend.server
+".venv\Scripts\python.exe" scripts\start_litera.py
 if errorlevel 1 goto failed
 exit /b 0
 :failed

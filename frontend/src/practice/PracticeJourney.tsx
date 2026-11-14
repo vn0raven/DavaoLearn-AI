@@ -35,11 +35,12 @@ function pickActivity(profile: Profile | null, skill: Skill, records: PracticeRu
 
 /** Guided activities only. These records never count as scored assessment evidence. */
 export function PracticeJourney({ learnerId, sessionId, profile, onAssessment, navigationVersion }: {
-  learnerId: string; sessionId: string; profile: Profile | null; onAssessment: (skill: Skill) => void; navigationVersion?: number;
+  learnerId: string; sessionId: string; profile: Profile | null; onAssessment: (skill: Skill) => Promise<string | undefined>; navigationVersion?: number;
 }) {
   const [records, setRecords] = useState<PracticeRun[]>([]);
   const [run, setRun] = useState<PracticeRun | null>(null);
   const [notice, setNotice] = useState('');
+  const [checking, setChecking] = useState(false);
   const [ready, setReady] = useState(false);
   const [largeText, setLargeText] = useState(false);
   const [contrast, setContrast] = useState(false);
@@ -118,6 +119,14 @@ export function PracticeJourney({ learnerId, sessionId, profile, onAssessment, n
     persist(startPractice(activity, {learnerId, sessionId}, crypto.randomUUID(), time()));
   }
 
+  async function openReassessment(skill: Skill) {
+    setChecking(true);
+    setNotice('');
+    try { setNotice(await onAssessment(skill) ?? ''); }
+    catch (error) { setNotice(error instanceof Error ? error.message : 'Could not check for new assessment material.'); }
+    finally { setChecking(false); }
+  }
+
   function resume(record: PracticeRun) { showRun(record); setWord(''); setNotice(''); }
 
   function retry() {
@@ -193,7 +202,7 @@ export function PracticeJourney({ learnerId, sessionId, profile, onAssessment, n
       <div className="quest-workspace-head"><button className="button quiet-button" onClick={()=>showRun(null)}>← Back to my journey</button><span className="pill-status">{names[active.skill]} · Guided practice</span></div>
       <div className="quest-workspace-intro"><span className="quest-zone-art" aria-hidden="true">{art[active.skill]}</span><div><p className="eyebrow">{questFor(active).zone} · {active.difficultyTier}</p><h3 ref={headingRef} tabIndex={-1}>{active.title}</h3><p>{active.instructions}</p></div></div>
       {run.completedAt ? <div className="quest-complete" role="status"><span aria-hidden="true">🏅</span><h3>Quest completed!</h3><p>You earned a practice star for this activity. You can repeat it anytime.</p><p>{run.attempts.length} attempts · {run.hintHistory?.length??0} hints used · {run.audioAssistance?.length??0} audio supports used</p>
-        <div className="quest-footer-actions"><button className="button primary" onClick={()=>onAssessment(active.skill)}>Choose a reading assessment <Icon name="arrow" size={17}/></button><button className="button quiet-button" onClick={()=>showRun(null)}>Return to quest map</button></div><p className="subtle">Your teacher still needs to validate any assessment results. Reusing an assessment form may not count as fresh evidence.</p></div> : <>
+        <div className="quest-footer-actions"><button className="button primary" disabled={checking} onClick={()=>void openReassessment(active.skill)}>{checking ? 'Checking forms…' : 'Check for a fresh assessment'} <Icon name="arrow" size={17}/></button><button className="button quiet-button" onClick={()=>showRun(null)}>Return to quest map</button></div><p className="subtle">Your teacher validates reassessment results. Litera checks for an unseen form with approved comparability.</p></div> : <>
         <div className="quest-step-line"><strong>Step {run.step+1} of {active.steps.length}</strong><span>{Math.round(100*(run.step+1)/active.steps.length)}% of steps</span></div>
         <div className="progress-track"><div style={{width:`${100*(run.step+1)/active.steps.length}%`}}/></div>
         {active.passage?.length ? <div className="quest-reading-passage" aria-label="Practice reading passage">{active.passage.map((line,i)=><p key={i} className={final?.line === i ? 'quest-evidence-line' : ''}>{line}</p>)}</div> : null}
