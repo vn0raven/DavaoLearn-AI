@@ -1,6 +1,6 @@
 # Phase 6 · Guided reading practice
 
-In Litera Reading Checks, **Session evidence → Recommended practice** uses the existing Phase 5 primary and secondary recommendation IDs. The earlier standalone Filipino activities in the root `dist/` use a separate offline demo and its own local data.
+In Litera Reading Checks, **Session evidence → Recommended practice** uses the existing Phase 5 primary and secondary recommendation IDs. The earlier standalone Filipino activities in the `legacy/filipino-demo/` use a separate offline demo and its own local data.
 
 | Recommendation | Practice pack |
 | --- | --- |

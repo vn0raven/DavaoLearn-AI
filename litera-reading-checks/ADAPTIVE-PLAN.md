@@ -1,6 +1,6 @@
 # Phase 5 · Adaptive reading recommendation
 
-Litera's existing evidence endpoint returns a `recommendation` generated from the saved Phase 4 profile. `voice/tree.py` owns the routing rules. The existing Voice Lab calls the same planner and still accepts its fictional raw-check fixtures. The older browser-local Filipino demo in `dist/` keeps its separate data and thresholds.
+Litera's existing evidence endpoint returns a `recommendation` generated from the saved Phase 4 profile. `voice/tree.py` owns the routing rules. The existing Voice Lab calls the same planner and still accepts its fictional raw-check fixtures. The older browser-local Filipino demo in `legacy/filipino-demo/` keeps its separate data and thresholds.
 
 ## Confirmed routes
 
